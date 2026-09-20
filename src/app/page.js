@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { getPlayerData } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
+import Image from 'next/image';
 
 export default function Home() {
   const [tag, setTag] = useState('');
@@ -62,12 +63,13 @@ export default function Home() {
         <div style={{ border: '1px solid #ccc', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h2 style={{ margin: 0 }}>{player.name}</h2>
-              <span style={{ color: '#666' }}>{player.tag}</span>
+              <h2 className="font-black">{player.name}</h2>
+              <span className="font-mono text-[#666]">{player.tag}</span>
             </div>
             {/* Render the League Badge if league / leagueTier exists */}
             <LeagueBadge leagueTier={player.leagueTier || player.league} />
-            <strong>Trophies:</strong> {player.trophies}
+            <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png"  width="25" height="25" alt="Throphy Icon"/>
+            {player.trophies}
           </div>
 
           <hr style={{ margin: '1rem 0', borderColor: '#eee' }} />
