@@ -1,6 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api-assets.clashofclans.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'assets.clashk.ing',
+      },
+    ],
+  },
 };
 
 export default nextConfig;
