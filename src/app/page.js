@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { getPlayerData } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
+import HeroIcon from '@/components/HeroIcon';
+import EquipmentIcon from '@/components/EquipmentIcon';
 import Image from 'next/image';
 
 export default function Home() {
@@ -62,15 +64,18 @@ export default function Home() {
       {player && (
         <div style={{ border: '1px solid #ccc', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div className="flex ">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <TownHallImage level={player.townHallLevel} />
-              <h2 className="font-black">{player.name}</h2>
-              <span className="font-mono text-[#666]">{player.tag}</span>
+              <div>
+                <h2 style={{ margin: 0 }}>{player.name}</h2>
+                <span style={{ color: '#666', fontFamily: 'monospace' }}>{player.tag}</span>
+              </div>
             </div>
-            {/* Render the League Badge if league / leagueTier exists */}
-            <LeagueBadge leagueTier={player.leagueTier || player.league} />
-            <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" width="25" height="25" alt="Throphy Icon" />
-            {player.trophies}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <LeagueBadge leagueTier={player.leagueTier || player.league} />
+              <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" width="25" height="25" alt="Trophy Icon" />
+              <strong>{player.trophies}</strong>
+            </div>
           </div>
 
           <hr style={{ margin: '1rem 0', borderColor: '#eee' }} />
@@ -85,39 +90,52 @@ export default function Home() {
             <div>
               <strong>Exp Level:</strong> {player.expLevel}
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <strong>Hero Equipment:</strong>
-              {player.heroes && player.heroes.length > 0 ? (
-                <ul style={{ margin: '0.5rem 0 0 1rem', paddingLeft: '0' }}>
-                  {player.heroes.map((hero) => (
-                    <li key={hero.name}>
-                      {hero.name} : Level {hero.level}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <span> None</span>
-              )}
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <strong>Hero Equipment:</strong>
-              {player.heroEquipment && player.heroEquipment.length > 0 ? (
-                <ul style={{ margin: '0.5rem 0 0 1rem', paddingLeft: '0' }}>
-                  {player.heroEquipment.map((gear) => (
-                    <li key={gear.name}>
-                      {gear.name} : Level {gear.level}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <span> None</span>
-              )}
-            </div>
-            <div>
-              <strong>Clan:</strong> {player.clan ? player.clan.name : 'No Clan'}
-            </div>
             <div>
               <strong>War Stars:</strong> {player.warStars}
+            </div>
+
+            {/* Home Village Heroes section */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Home Village Heroes:</strong>
+              {player.heroes && player.heroes.filter((hero) => hero.village === 'home').length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                  {player.heroes
+                    .filter((hero) => hero.village === 'home')
+                    .map((hero) => (
+                      <HeroIcon
+                        key={hero.name}
+                        name={hero.name}
+                        level={hero.level}
+                        maxLevel={hero.maxLevel}
+                      />
+                    ))}
+                </div>
+              ) : (
+                <span> None</span>
+              )}
+            </div>
+
+            {/* Hero Equipment section */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Hero Equipment:</strong>
+              {player.heroEquipment && player.heroEquipment.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                  {player.heroEquipment.map((gear) => (
+                    <EquipmentIcon
+                      key={gear.name}
+                      name={gear.name}
+                      level={gear.level}
+                      maxLevel={gear.maxLevel}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <span> None</span>
+              )}
+            </div>
+
+            <div>
+              <strong>Clan:</strong> {player.clan ? player.clan.name : 'No Clan'}
             </div>
           </div>
         </div>
