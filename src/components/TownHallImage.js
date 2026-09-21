@@ -8,14 +8,15 @@ export default function TownHallImage({ level }) {
   const imageUrl = `https://assets.clashk.ing/buildings/home-village/town_hall/level_${level}.webp`;
 
   return (
-    <div style={{ position: 'relative', width: '90px', height: '90px' }}>
+    <div className="relative w-[90px] h-[90px] shrink-0">
       <Image
         src={imageUrl}
         alt={`Town Hall Level ${level}`}
         fill
         sizes="90px"
-        style={{ objectFit: 'contain' }}
+        className="object-contain"
       />
     </div>
   );
 }
+

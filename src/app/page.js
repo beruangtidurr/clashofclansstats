@@ -35,52 +35,52 @@ export default function Home() {
   };
 
   return (
-    <main style={{ maxWidth: '600px', margin: '2rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
-      <h1>Clash of Clans Player Lookup</h1>
+    <main className="max-w-[600px] w-full mx-auto my-8 px-4 font-sans">
+      <h1 className="text-2xl font-bold mb-6">Clash of Clans Player Lookup</h1>
 
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
         <input
           type="text"
           placeholder="Enter Player Tag (e.g. #2ABC)"
           value={tag}
           onChange={(e) => setTag(e.target.value)}
-          style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded bg-white dark:bg-neutral-900 text-foreground placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
           type="submit"
           disabled={loading}
-          style={{ padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+          className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium text-sm transition-colors cursor-pointer disabled:cursor-not-allowed"
         >
           {loading ? 'Searching...' : 'Search'}
         </button>
       </form>
 
       {error && (
-        <div style={{ color: 'red', marginBottom: '1rem', padding: '0.5rem', border: '1px solid red', borderRadius: '4px' }}>
+        <div className="text-red-600 dark:text-red-400 mb-4 p-2 border border-red-500/50 bg-red-50 dark:bg-red-950/20 rounded text-sm">
           {error}
         </div>
       )}
 
       {player && (
-        <div style={{ border: '1px solid #ccc', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="border border-gray-300 dark:border-neutral-700 p-6 rounded-lg shadow-sm bg-white dark:bg-neutral-900">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
               <TownHallImage level={player.townHallLevel} />
               <div>
-                <h2 style={{ margin: 0 }}>{player.name}</h2>
-                <span style={{ color: '#666', fontFamily: 'monospace' }}>{player.tag}</span>
+                <h2 className="m-0 text-xl font-bold">{player.name}</h2>
+                <span className="text-gray-500 dark:text-neutral-400 font-mono">{player.tag}</span>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="flex items-center gap-2">
               <LeagueBadge leagueTier={player.leagueTier || player.league} />
-              <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" width="25" height="25" alt="Trophy Icon" />
+              <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" width={25} height={25} alt="Trophy Icon" className="shrink-0" />
               <strong>{player.trophies}</strong>
             </div>
           </div>
 
-          <hr style={{ margin: '1rem 0', borderColor: '#eee' }} />
+          <hr className="my-4 border-gray-200 dark:border-neutral-800" />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <strong>Town Hall Level:</strong> {player.townHallLevel}
             </div>
@@ -95,10 +95,10 @@ export default function Home() {
             </div>
 
             {/* Home Village Heroes section */}
-            <div style={{ gridColumn: '1 / -1' }}>
-              <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Home Village Heroes:</strong>
+            <div className="col-span-2">
+              <strong className="block mb-2">Home Village Heroes:</strong>
               {player.heroes && player.heroes.filter((hero) => hero.village === 'home').length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
                   {player.heroes
                     .filter((hero) => hero.village === 'home')
                     .map((hero) => (
@@ -116,10 +116,10 @@ export default function Home() {
             </div>
 
             {/* Hero Equipment section */}
-            <div style={{ gridColumn: '1 / -1' }}>
-              <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Hero Equipment:</strong>
+            <div className="col-span-2">
+              <strong className="block mb-2">Hero Equipment:</strong>
               {player.heroEquipment && player.heroEquipment.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
                   {player.heroEquipment.map((gear) => (
                     <EquipmentIcon
                       key={gear.name}

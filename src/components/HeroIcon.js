@@ -12,22 +12,23 @@ export default function HeroIcon({ name, level, maxLevel }) {
   const imageUrl = `https://assets.clashk.ing/heroes/${formattedName}/icon.webp`;
 
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-      <div style={{ position: 'relative', width: '36px', height: '36px', flexShrink: 0 }}>
+    <div className="inline-flex items-center gap-2 mb-1.5">
+      <div className="relative w-9 h-9 shrink-0">
         <Image
           src={imageUrl}
           alt={name}
           fill
           sizes="36px"
-          style={{ objectFit: 'contain' }}
+          className="object-contain"
         />
       </div>
       <div>
-        <span style={{ fontWeight: '600' }}>{name}</span>
-        <span style={{ color: '#666', fontSize: '0.875rem', marginLeft: '0.3rem' }}>
+        <span className="font-semibold text-sm">{name}</span>
+        <span className="text-gray-500 dark:text-neutral-400 text-xs ml-1.5">
           Lvl {level}{maxLevel ? `/${maxLevel}` : ''}
         </span>
       </div>
     </div>
   );
 }
+

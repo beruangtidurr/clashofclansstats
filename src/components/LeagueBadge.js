@@ -5,14 +5,16 @@ export default function LeagueBadge({ leagueTier }) {
   if (!leagueTier?.iconUrls?.small) return null;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div className="flex items-center gap-2">
       <Image
         src={leagueTier.iconUrls.small}
         alt={leagueTier.name || 'League Badge'}
         width={36}
         height={36}
+        className="shrink-0"
       />
-      <span>{leagueTier.name}</span>
+      <span className="text-sm font-medium">{leagueTier.name}</span>
     </div>
   );
 }
+
