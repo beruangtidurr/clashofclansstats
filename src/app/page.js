@@ -62,13 +62,14 @@ export default function Home() {
       {player && (
         <div style={{ border: '1px solid #ccc', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
+            <div className="flex ">
+              <TownHallImage level={player.townHallLevel} />
               <h2 className="font-black">{player.name}</h2>
               <span className="font-mono text-[#666]">{player.tag}</span>
             </div>
             {/* Render the League Badge if league / leagueTier exists */}
             <LeagueBadge leagueTier={player.leagueTier || player.league} />
-            <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png"  width="25" height="25" alt="Throphy Icon"/>
+            <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" width="25" height="25" alt="Throphy Icon" />
             {player.trophies}
           </div>
 
@@ -76,7 +77,6 @@ export default function Home() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <TownHallImage level={player.townHallLevel} />
               <strong>Town Hall Level:</strong> {player.townHallLevel}
             </div>
             <div>
@@ -84,6 +84,34 @@ export default function Home() {
             </div>
             <div>
               <strong>Exp Level:</strong> {player.expLevel}
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <strong>Hero Equipment:</strong>
+              {player.heroes && player.heroes.length > 0 ? (
+                <ul style={{ margin: '0.5rem 0 0 1rem', paddingLeft: '0' }}>
+                  {player.heroes.map((hero) => (
+                    <li key={hero.name}>
+                      {hero.name} : Level {hero.level}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span> None</span>
+              )}
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <strong>Hero Equipment:</strong>
+              {player.heroEquipment && player.heroEquipment.length > 0 ? (
+                <ul style={{ margin: '0.5rem 0 0 1rem', paddingLeft: '0' }}>
+                  {player.heroEquipment.map((gear) => (
+                    <li key={gear.name}>
+                      {gear.name} : Level {gear.level}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span> None</span>
+              )}
             </div>
             <div>
               <strong>Clan:</strong> {player.clan ? player.clan.name : 'No Clan'}
