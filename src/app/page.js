@@ -2,11 +2,12 @@
 'use client'
 
 import { useState } from 'react';
-import { getPlayerData } from './actions';
+import { getPlayerData, getPlayerBattleHistory } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
 import HeroIcon from '@/components/HeroIcon';
 import EquipmentIcon from '@/components/EquipmentIcon';
+import BattleHistory from '@/components/BattleHistory';
 import Image from 'next/image';
 
 export default function Home() {
@@ -14,6 +15,9 @@ export default function Home() {
   const [player, setPlayer] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [battles, setBattles] = useState(null);
+  const [battleLoading, setBattleLoading] = useState(false);
+  const [battleError, setBattleError] = useState(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -21,21 +25,35 @@ export default function Home() {
 
     setLoading(true);
     setError(null);
+    setBattles(null);
+    setBattleError(null);
+    setBattleLoading(true);
 
-    const result = await getPlayerData(tag);
+    const [playerResult, battleResult] = await Promise.all([
+      getPlayerData(tag),
+      getPlayerBattleHistory(tag),
+    ]);
 
-    if (result.error) {
-      setError(result.error);
+    if (playerResult.error) {
+      setError(playerResult.error);
       setPlayer(null);
+      setBattles(null);
     } else {
-      setPlayer(result.data);
+      setPlayer(playerResult.data);
+      if (battleResult.error) {
+        setBattleError(battleResult.error);
+        setBattles([]);
+      } else {
+        setBattles(battleResult.data || []);
+      }
     }
 
     setLoading(false);
+    setBattleLoading(false);
   };
 
   return (
-    <main className="max-w-[600px] w-full mx-auto my-8 px-4 font-sans">
+    <main className="max-w-[640px] w-full mx-auto my-8 px-4 font-sans">
       <h1 className="text-2xl font-bold mb-6">Clash of Clans Player Lookup</h1>
 
       <form onSubmit={handleSearch} className="flex gap-2 mb-6">
@@ -62,102 +80,112 @@ export default function Home() {
       )}
 
       {player && (
-        <div className="border border-gray-300 dark:border-neutral-700 p-6 rounded-lg shadow-sm bg-white dark:bg-neutral-900">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <TownHallImage level={player.townHallLevel} />
-              <div>
-                <h2 className="m-0 text-xl font-bold">{player.name}</h2>
-                {player.clan ? (
-                  <div className="flex items-center gap-1.5 my-0.5">
-                    {player.clan.badgeUrls?.small && (
-                      <div className="relative w-6 h-6 shrink-0">
-                        <Image
-                          src={player.clan.badgeUrls.small}
-                          alt={player.clan.name || 'Clan Badge'}
-                          fill
-                          sizes="24px"
-                          className="object-contain"
-                        />
-                      </div>
-                    )}
-                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      {player.clan.name}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-500 dark:text-neutral-400 my-0.5">
-                    No Clan
-                  </div>
-                )}
-                <span className="text-gray-500 dark:text-neutral-400 font-mono text-sm">{player.tag}</span>
+        <>
+          <div className="border border-gray-300 dark:border-neutral-700 p-6 rounded-lg shadow-sm bg-white dark:bg-neutral-900">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <TownHallImage level={player.townHallLevel} />
+                <div>
+                  <h2 className="m-0 text-xl font-bold">{player.name}</h2>
+                  {player.clan ? (
+                    <div className="flex items-center gap-1.5 my-0.5">
+                      {player.clan.badgeUrls?.small && (
+                        <div className="relative w-6 h-6 shrink-0">
+                          <Image
+                            src={player.clan.badgeUrls.small}
+                            alt={player.clan.name || 'Clan Badge'}
+                            fill
+                            sizes="24px"
+                            className="object-contain"
+                          />
+                        </div>
+                      )}
+                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {player.clan.name}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 dark:text-neutral-400 my-0.5">
+                      No Clan
+                    </div>
+                  )}
+                  <span className="text-gray-500 dark:text-neutral-400 font-mono text-sm">{player.tag}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <LeagueBadge leagueTier={player.leagueTier || player.league} />
+                <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" width={25} height={25} alt="Trophy Icon" className="shrink-0" />
+                <strong>{player.trophies}</strong>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <LeagueBadge leagueTier={player.leagueTier || player.league} />
-              <Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" width={25} height={25} alt="Trophy Icon" className="shrink-0" />
-              <strong>{player.trophies}</strong>
-            </div>
-          </div>
 
-          <hr className="my-4 border-gray-200 dark:border-neutral-800" />
+            <hr className="my-4 border-gray-200 dark:border-neutral-800" />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <strong>Town Hall Level:</strong> {player.townHallLevel}
-            </div>
-            <div>
-              <strong>Best Trophies:</strong> {player.bestTrophies}
-            </div>
-            <div>
-              <strong>Exp Level:</strong> {player.expLevel}
-            </div>
-            <div>
-              <strong>War Stars:</strong> {player.warStars}
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <strong>Town Hall Level:</strong> {player.townHallLevel}
+              </div>
+              <div>
+                <strong>Best Trophies:</strong> {player.bestTrophies}
+              </div>
+              <div>
+                <strong>Exp Level:</strong> {player.expLevel}
+              </div>
+              <div>
+                <strong>War Stars:</strong> {player.warStars}
+              </div>
 
-            {/* Home Village Heroes section */}
-            <div className="col-span-2">
-              <strong className="block mb-2">Home Village Heroes:</strong>
-              {player.heroes && player.heroes.filter((hero) => hero.village === 'home').length > 0 ? (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
-                  {player.heroes
-                    .filter((hero) => hero.village === 'home')
-                    .map((hero) => (
-                      <HeroIcon
-                        key={hero.name}
-                        name={hero.name}
-                        level={hero.level}
-                        maxLevel={hero.maxLevel}
+              {/* Home Village Heroes section */}
+              <div className="col-span-2">
+                <strong className="block mb-2">Home Village Heroes:</strong>
+                {player.heroes && player.heroes.filter((hero) => hero.village === 'home').length > 0 ? (
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
+                    {player.heroes
+                      .filter((hero) => hero.village === 'home')
+                      .map((hero) => (
+                        <HeroIcon
+                          key={hero.name}
+                          name={hero.name}
+                          level={hero.level}
+                          maxLevel={hero.maxLevel}
+                        />
+                      ))}
+                  </div>
+                ) : (
+                  <span> None</span>
+                )}
+              </div>
+
+              {/* Hero Equipment section */}
+              <div className="col-span-2">
+                <strong className="block mb-2">Hero Equipment:</strong>
+                {player.heroEquipment && player.heroEquipment.length > 0 ? (
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
+                    {player.heroEquipment.map((gear) => (
+                      <EquipmentIcon
+                        key={gear.name}
+                        name={gear.name}
+                        level={gear.level}
+                        maxLevel={gear.maxLevel}
                       />
                     ))}
-                </div>
-              ) : (
-                <span> None</span>
-              )}
-            </div>
-
-            {/* Hero Equipment section */}
-            <div className="col-span-2">
-              <strong className="block mb-2">Hero Equipment:</strong>
-              {player.heroEquipment && player.heroEquipment.length > 0 ? (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
-                  {player.heroEquipment.map((gear) => (
-                    <EquipmentIcon
-                      key={gear.name}
-                      name={gear.name}
-                      level={gear.level}
-                      maxLevel={gear.maxLevel}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <span> None</span>
-              )}
+                  </div>
+                ) : (
+                  <span> None</span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* Player Battle History */}
+          <BattleHistory
+            battles={battles}
+            loading={battleLoading}
+            error={battleError}
+          />
+        </>
       )}
     </main>
   );
 }
+
