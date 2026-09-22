@@ -68,7 +68,29 @@ export default function Home() {
               <TownHallImage level={player.townHallLevel} />
               <div>
                 <h2 className="m-0 text-xl font-bold">{player.name}</h2>
-                <span className="text-gray-500 dark:text-neutral-400 font-mono">{player.tag}</span>
+                {player.clan ? (
+                  <div className="flex items-center gap-1.5 my-0.5">
+                    {player.clan.badgeUrls?.small && (
+                      <div className="relative w-6 h-6 shrink-0">
+                        <Image
+                          src={player.clan.badgeUrls.small}
+                          alt={player.clan.name || 'Clan Badge'}
+                          fill
+                          sizes="24px"
+                          className="object-contain"
+                        />
+                      </div>
+                    )}
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      {player.clan.name}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-neutral-400 my-0.5">
+                    No Clan
+                  </div>
+                )}
+                <span className="text-gray-500 dark:text-neutral-400 font-mono text-sm">{player.tag}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -132,10 +154,6 @@ export default function Home() {
               ) : (
                 <span> None</span>
               )}
-            </div>
-
-            <div>
-              <strong>Clan:</strong> {player.clan ? player.clan.name : 'No Clan'}
             </div>
           </div>
         </div>
