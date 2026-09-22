@@ -2,12 +2,13 @@
 'use client'
 
 import { useState } from 'react';
-import { getPlayerData, getPlayerBattleHistory } from './actions';
+import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
 import HeroIcon from '@/components/HeroIcon';
 import EquipmentIcon from '@/components/EquipmentIcon';
 import BattleHistory from '@/components/BattleHistory';
+import CwlHistory from '@/components/CwlHistory';
 import Image from 'next/image';
 
 export default function Home() {
@@ -18,6 +19,10 @@ export default function Home() {
   const [battles, setBattles] = useState(null);
   const [battleLoading, setBattleLoading] = useState(false);
   const [battleError, setBattleError] = useState(null);
+  const [cwl, setCwl] = useState(null);
+  const [cwlLoading, setCwlLoading] = useState(false);
+  const [cwlError, setCwlError] = useState(null);
+  const [activeTab, setActiveTab] = useState('battles');
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -28,16 +33,21 @@ export default function Home() {
     setBattles(null);
     setBattleError(null);
     setBattleLoading(true);
+    setCwl(null);
+    setCwlError(null);
+    setCwlLoading(true);
 
-    const [playerResult, battleResult] = await Promise.all([
+    const [playerResult, battleResult, cwlResult] = await Promise.all([
       getPlayerData(tag),
       getPlayerBattleHistory(tag),
+      getPlayerCwlHistory(tag),
     ]);
 
     if (playerResult.error) {
       setError(playerResult.error);
       setPlayer(null);
       setBattles(null);
+      setCwl(null);
     } else {
       setPlayer(playerResult.data);
       if (battleResult.error) {
@@ -46,10 +56,18 @@ export default function Home() {
       } else {
         setBattles(battleResult.data || []);
       }
+
+      if (cwlResult.error) {
+        setCwlError(cwlResult.error);
+        setCwl([]);
+      } else {
+        setCwl(cwlResult.data || []);
+      }
     }
 
     setLoading(false);
     setBattleLoading(false);
+    setCwlLoading(false);
   };
 
   return (
@@ -177,12 +195,57 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Player Battle History */}
-          <BattleHistory
-            battles={battles}
-            loading={battleLoading}
-            error={battleError}
-          />
+          {/* History Navigation Tabs */}
+          <div className="flex border-b border-gray-200 dark:border-neutral-800 mt-6 gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('battles')}
+              className={`pb-3 px-3 font-semibold text-sm transition-colors border-b-2 -mb-px flex items-center gap-2 cursor-pointer ${
+                activeTab === 'battles'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+              }`}
+            >
+              <span>Battle History</span>
+              {battles && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300">
+                  {battles.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('cwl')}
+              className={`pb-3 px-3 font-semibold text-sm transition-colors border-b-2 -mb-px flex items-center gap-2 cursor-pointer ${
+                activeTab === 'cwl'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+              }`}
+            >
+              <span>CWL History</span>
+              {cwl && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-medium">
+                  {cwl.length} {cwl.length === 1 ? 'season' : 'seasons'}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Active History View */}
+          {activeTab === 'battles' ? (
+            <BattleHistory
+              battles={battles}
+              loading={battleLoading}
+              error={battleError}
+            />
+          ) : (
+            <CwlHistory
+              cwl={cwl}
+              loading={cwlLoading}
+              error={cwlError}
+            />
+          )}
         </>
       )}
     </main>

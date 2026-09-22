@@ -161,7 +161,7 @@ export default function BattleHistory({ battles, loading, error }) {
 
   if (loading) {
     return (
-      <div className="mt-6 border border-gray-300 dark:border-neutral-700 p-6 rounded-lg bg-white dark:bg-neutral-900 shadow-sm animate-pulse">
+      <div className="mt-4 border border-gray-300 dark:border-neutral-700 p-6 rounded-lg bg-white dark:bg-neutral-900 shadow-sm animate-pulse">
         <div className="h-6 bg-gray-200 dark:bg-neutral-800 rounded w-1/3 mb-4" />
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="h-16 bg-gray-200 dark:bg-neutral-800 rounded" />
@@ -178,7 +178,7 @@ export default function BattleHistory({ battles, loading, error }) {
 
   if (error && (!battles || battles.length === 0)) {
     return (
-      <div className="mt-6 border border-gray-300 dark:border-neutral-700 p-5 rounded-lg bg-white dark:bg-neutral-900 shadow-sm text-sm text-gray-500 dark:text-neutral-400 text-center">
+      <div className="mt-4 border border-gray-300 dark:border-neutral-700 p-5 rounded-lg bg-white dark:bg-neutral-900 shadow-sm text-sm text-gray-500 dark:text-neutral-400 text-center">
         Unable to load battle history: {error}
       </div>
     );
@@ -186,7 +186,7 @@ export default function BattleHistory({ battles, loading, error }) {
 
   if (!battles || battles.length === 0) {
     return (
-      <div className="mt-6 border border-gray-300 dark:border-neutral-700 p-6 rounded-lg bg-white dark:bg-neutral-900 shadow-sm text-center">
+      <div className="mt-4 border border-gray-300 dark:border-neutral-700 p-6 rounded-lg bg-white dark:bg-neutral-900 shadow-sm text-center">
         <h3 className="text-base font-semibold mb-1">Battle History</h3>
         <p className="text-sm text-gray-500 dark:text-neutral-400">
           No recorded battle history found for this player.
@@ -198,7 +198,7 @@ export default function BattleHistory({ battles, loading, error }) {
   const visibleBattles = filteredBattles.slice(0, visibleCount);
 
   return (
-    <div className="mt-6 border border-gray-300 dark:border-neutral-700 p-6 rounded-lg shadow-sm bg-white dark:bg-neutral-900">
+    <div className="mt-4 border border-gray-300 dark:border-neutral-700 p-6 rounded-lg shadow-sm bg-white dark:bg-neutral-900">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
