@@ -9,6 +9,7 @@ import HeroIcon from '@/components/HeroIcon';
 import EquipmentIcon from '@/components/EquipmentIcon';
 import BattleHistory from '@/components/BattleHistory';
 import CwlHistory from '@/components/CwlHistory';
+import SavedPlayers, { useSavedPlayers, normalizeTag, StarIcon } from '@/components/SavedPlayers';
 import Image from 'next/image';
 
 export default function Home() {
@@ -24,10 +25,21 @@ export default function Home() {
   const [cwlError, setCwlError] = useState(null);
   const [activeTab, setActiveTab] = useState('battles');
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!tag) return;
+  const {
+    savedPlayers,
+    isPlayerSaved,
+    handleSavePlayer,
+    handleRemoveSavedPlayer,
+    handleToggleSavePlayer,
+    handleClearAllSaved,
+    enrichSavedPlayer,
+  } = useSavedPlayers();
 
+  const searchPlayer = async (targetTag) => {
+    const cleanTag = (targetTag || tag).trim();
+    if (!cleanTag) return;
+
+    setTag(cleanTag);
     setLoading(true);
     setError(null);
     setBattles(null);
@@ -38,9 +50,9 @@ export default function Home() {
     setCwlLoading(true);
 
     const [playerResult, battleResult, cwlResult] = await Promise.all([
-      getPlayerData(tag),
-      getPlayerBattleHistory(tag),
-      getPlayerCwlHistory(tag),
+      getPlayerData(cleanTag),
+      getPlayerBattleHistory(cleanTag),
+      getPlayerCwlHistory(cleanTag),
     ]);
 
     if (playerResult.error) {
@@ -50,6 +62,8 @@ export default function Home() {
       setCwl(null);
     } else {
       setPlayer(playerResult.data);
+      enrichSavedPlayer(playerResult.data);
+
       if (battleResult.error) {
         setBattleError(battleResult.error);
         setBattles([]);
@@ -70,18 +84,49 @@ export default function Home() {
     setCwlLoading(false);
   };
 
+  const handleSearch = (e) => {
+    if (e) e.preventDefault();
+    searchPlayer(tag);
+  };
+
   return (
     <main className="max-w-[640px] w-full mx-auto my-8 px-4 font-sans">
       <h1 className="text-2xl font-bold mb-6">Clash of Clans Player Lookup</h1>
 
-      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-        <input
-          type="text"
-          placeholder="Enter Player Tag (e.g. #2ABC)"
-          value={tag}
-          onChange={(e) => setTag(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded bg-white dark:bg-neutral-900 text-foreground placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <form onSubmit={handleSearch} className="flex gap-2 mb-3">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="Enter Player Tag (e.g. #2ABC)"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            className="w-full px-3 py-2 pr-9 border border-gray-300 dark:border-neutral-700 rounded bg-white dark:bg-neutral-900 text-foreground placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm uppercase"
+          />
+          {tag.trim() && (
+            <button
+              type="button"
+              onClick={() => {
+                const norm = normalizeTag(tag);
+                if (isPlayerSaved(norm)) {
+                  handleRemoveSavedPlayer(norm);
+                } else if (player && normalizeTag(player.tag) === norm) {
+                  handleSavePlayer(player);
+                } else {
+                  handleSavePlayer({ tag: norm });
+                }
+              }}
+              title={isPlayerSaved(tag) ? 'Remove tag from saved' : 'Save this tag'}
+              aria-label={isPlayerSaved(tag) ? 'Remove tag from saved' : 'Save this tag'}
+              className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded transition-colors cursor-pointer ${
+                isPlayerSaved(tag)
+                  ? 'text-amber-500 hover:text-amber-600'
+                  : 'text-gray-400 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400'
+              }`}
+            >
+              <StarIcon filled={isPlayerSaved(tag)} className="w-4 h-4" />
+            </button>
+          )}
+        </div>
         <button
           type="submit"
           disabled={loading}
@@ -90,6 +135,15 @@ export default function Home() {
           {loading ? 'Searching...' : 'Search'}
         </button>
       </form>
+
+      {/* Saved Players list from browser memory */}
+      <SavedPlayers
+        savedPlayers={savedPlayers}
+        currentTag={player ? player.tag : tag}
+        onSelectPlayer={(selectedTag) => searchPlayer(selectedTag)}
+        onRemovePlayer={(tagToRemove) => handleRemoveSavedPlayer(tagToRemove)}
+        onClearAll={handleClearAllSaved}
+      />
 
       {error && (
         <div className="text-red-600 dark:text-red-400 mb-4 p-2 border border-red-500/50 bg-red-50 dark:bg-red-950/20 rounded text-sm">
@@ -127,7 +181,23 @@ export default function Home() {
                       No Clan
                     </div>
                   )}
-                  <span className="text-gray-500 dark:text-neutral-400 font-mono text-sm">{player.tag}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-gray-500 dark:text-neutral-400 font-mono text-sm">{player.tag}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSavePlayer(player)}
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium border transition-colors cursor-pointer ${
+                        isPlayerSaved(player.tag)
+                          ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700/60 hover:bg-amber-100 dark:hover:bg-amber-950/60'
+                          : 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700 hover:bg-gray-200 dark:hover:bg-neutral-700'
+                      }`}
+                      title={isPlayerSaved(player.tag) ? "Remove from saved players" : "Save this player's tag"}
+                      aria-label={isPlayerSaved(player.tag) ? "Remove from saved players" : "Save this player's tag"}
+                    >
+                      <StarIcon filled={isPlayerSaved(player.tag)} className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>{isPlayerSaved(player.tag) ? 'Saved' : 'Save Tag'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
