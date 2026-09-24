@@ -214,24 +214,24 @@ export default function SavedPlayers({
   const normalizedCurrent = normalizeTag(currentTag);
 
   return (
-    <div className="mb-6 p-3 bg-gray-50/80 dark:bg-neutral-900/50 border border-gray-200 dark:border-neutral-800 rounded-lg">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400 flex items-center gap-1.5">
-          <StarIcon filled className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-          Saved Players ({savedPlayers.length})
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-2 px-0.5">
+        <span className="text-[11px] font-medium tracking-wide uppercase text-neutral-400 dark:text-neutral-500 flex items-center gap-1.5">
+          <StarIcon filled className="w-3 h-3 text-amber-500 shrink-0" />
+          Saved ({savedPlayers.length})
         </span>
         {savedPlayers.length > 1 && (
           <button
             type="button"
             onClick={onClearAll}
-            className="text-[11px] text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400 transition-colors cursor-pointer"
+            className="text-[11px] text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors cursor-pointer"
           >
             Clear all
           </button>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {savedPlayers.map((item) => {
           const itemTag = normalizeTag(item.tag);
           const isSelected = normalizedCurrent && normalizedCurrent === itemTag;
@@ -239,22 +239,28 @@ export default function SavedPlayers({
           return (
             <div
               key={item.tag}
-              className={`inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-md text-xs border transition-all ${
+              className={`group inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-full text-xs transition-all ${
                 isSelected
-                  ? 'bg-blue-50 border-blue-400 text-blue-900 dark:bg-blue-950/50 dark:border-blue-600 dark:text-blue-200 ring-1 ring-blue-400/30'
-                  : 'bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-200 hover:border-gray-400 dark:hover:border-neutral-600'
+                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-950 font-medium shadow-xs'
+                  : 'bg-neutral-100/80 hover:bg-neutral-200/80 dark:bg-neutral-800/60 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200/50 dark:border-neutral-700/40'
               }`}
             >
               <button
                 type="button"
                 onClick={() => onSelectPlayer && onSelectPlayer(item.tag)}
-                className="flex items-center gap-1.5 font-medium cursor-pointer text-left hover:underline"
+                className="flex items-center gap-1.5 cursor-pointer text-left"
                 title={`View stats for ${item.name || item.tag}`}
               >
                 {item.name ? (
                   <>
-                    <span className="font-semibold">{item.name}</span>
-                    <span className="text-[11px] font-mono text-gray-400 dark:text-neutral-400">
+                    <span className="font-medium">{item.name}</span>
+                    <span
+                      className={`text-[10px] font-mono ${
+                        isSelected
+                          ? 'text-neutral-300 dark:text-neutral-600'
+                          : 'text-neutral-400 dark:text-neutral-500'
+                      }`}
+                    >
                       {item.tag}
                     </span>
                   </>
@@ -263,7 +269,13 @@ export default function SavedPlayers({
                 )}
 
                 {item.townHallLevel && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
+                  <span
+                    className={`text-[9px] font-semibold px-1 rounded ${
+                      isSelected
+                        ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-800'
+                        : 'bg-neutral-200/80 text-neutral-600 dark:bg-neutral-700/60 dark:text-neutral-300'
+                    }`}
+                  >
                     TH{item.townHallLevel}
                   </span>
                 )}
@@ -276,7 +288,11 @@ export default function SavedPlayers({
                   onRemovePlayer && onRemovePlayer(item.tag);
                 }}
                 aria-label={`Remove ${item.name || item.tag} from saved`}
-                className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-neutral-700 dark:hover:text-red-400 rounded transition-colors cursor-pointer text-sm leading-none"
+                className={`w-4 h-4 flex items-center justify-center rounded-full text-xs transition-colors cursor-pointer ${
+                  isSelected
+                    ? 'text-neutral-400 hover:text-white dark:hover:text-neutral-900'
+                    : 'text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                }`}
                 title="Remove from saved"
               >
                 ×

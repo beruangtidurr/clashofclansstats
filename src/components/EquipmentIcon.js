@@ -4,40 +4,53 @@ import Image from 'next/image';
 export default function EquipmentIcon({ name, level, maxLevel }) {
   if (!name) return null;
 
-  // Convert gear name to snake_case for ClashKing asset URL
   const formattedName = name.toLowerCase().replace(/\s+/g, '_');
   const imageUrl = `https://assets.clashk.ing/equipment/${formattedName}.webp`;
 
-  // Determine rarity background and style based on maxLevel
-  // Epic max level is usually 27 (or 24), Common max level is 18
   const isEpic = maxLevel > 18;
-  const bgColor = isEpic ? 'bg-[#8F409E]' : 'bg-[#3C8BCC]';
-
-  const tooltipText = `${name} (Max Lvl ${maxLevel})`;
+  const isMax = maxLevel && level >= maxLevel;
 
   return (
-    <div className="group relative inline-flex items-center gap-1.5 mb-1.5 cursor-pointer">
-      {/* Icon Container with Rarity Background */}
-      <div className={`relative w-9 h-9 shrink-0 p-1 rounded-lg ${bgColor} shadow-sm flex items-center justify-center`}>
+    <div className="group relative flex items-center gap-2.5 p-2 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/50 dark:border-neutral-800/60 transition-colors">
+      <div className="relative w-8 h-8 shrink-0 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center p-0.5">
         <Image
           src={imageUrl}
           alt={name}
           fill
-          sizes="36px"
-          className="object-contain p-0.5"
+          sizes="32px"
+          className="object-contain"
         />
       </div>
 
-      {/* Current Level Badge */}
-      <span className="font-bold text-xs text-gray-800 dark:text-neutral-200">
-        Lvl {level}
-      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">
+            {name}
+          </span>
+          <span
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              isEpic ? 'bg-purple-500' : 'bg-blue-400'
+            }`}
+            title={isEpic ? 'Epic Equipment' : 'Common Equipment'}
+          />
+        </div>
+        <div className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 mt-0.5 font-mono">
+          <span>Lv {level}</span>
+          {maxLevel && (
+            <span className="text-neutral-400 dark:text-neutral-600">/ {maxLevel}</span>
+          )}
+          {isMax && (
+            <span className="text-[9px] font-sans font-semibold px-1 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+              MAX
+            </span>
+          )}
+        </div>
+      </div>
 
-      {/* Hover Tooltip showing Name and Max Level */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1 text-xs text-white shadow-lg dark:bg-neutral-800 z-20 pointer-events-none">
-        <span className="font-medium">{tooltipText}</span>
-        {/* Tooltip Arrow */}
-        <div className="w-2 h-2 -mb-1 bg-gray-900 dark:bg-neutral-800 rotate-45" />
+      {/* Hover Tooltip */}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs text-white shadow-md dark:bg-neutral-800 z-20 pointer-events-none">
+        <span className="font-medium">{name} · {isEpic ? 'Epic' : 'Common'} (Max {maxLevel})</span>
+        <div className="w-1.5 h-1.5 -mb-1 bg-neutral-900 dark:bg-neutral-800 rotate-45" />
       </div>
     </div>
   );
