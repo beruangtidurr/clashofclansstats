@@ -39,7 +39,9 @@ export default function TroopLevels({ troops = [], spells = [] }) {
 
   // Group troops & spells by categories
   const categories = useMemo(() => {
-    const homeTroops = (troops || []).filter((t) => t.village === 'home');
+    const homeTroops = (troops || []).filter(
+      (t) => t.village === 'home' || (!t.village && t.village !== 'builderBase')
+    );
     const builderTroops = (troops || []).filter((t) => t.village === 'builderBase');
 
     const regularTroops = [];
@@ -99,7 +101,9 @@ export default function TroopLevels({ troops = [], spells = [] }) {
 
   // Current category items
   const currentTab = tabs.find((t) => t.id === activeCategory) || tabs[0];
-  const currentItems = currentTab?.items || [];
+  const currentItems = useMemo(() => {
+    return currentTab?.items || [];
+  }, [currentTab]);
 
   // Filtered by maxed toggle
   const displayedItems = useMemo(() => {
@@ -162,7 +166,7 @@ export default function TroopLevels({ troops = [], spells = [] }) {
             >
               <span>{tab.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
                   isSelected
                     ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-800'
                     : 'bg-neutral-200/60 dark:bg-neutral-700/60 text-neutral-500 dark:text-neutral-400'

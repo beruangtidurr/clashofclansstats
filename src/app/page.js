@@ -7,6 +7,7 @@ import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
 import HeroIcon from '@/components/HeroIcon';
 import EquipmentIcon from '@/components/EquipmentIcon';
+import TroopLevels from '@/components/TroopLevels';
 import BattleHistory from '@/components/BattleHistory';
 import CwlHistory from '@/components/CwlHistory';
 import SavedPlayers, { useSavedPlayers, normalizeTag, StarIcon } from '@/components/SavedPlayers';
@@ -347,6 +348,9 @@ export default function Home() {
                 <div className="text-xs text-neutral-400">No equipment unlocked</div>
               )}
             </div>
+
+            {/* Troop Levels */}
+            <TroopLevels troops={player.troops} spells={player.spells} />
           </div>
 
           {/* History Navigation Tabs */}

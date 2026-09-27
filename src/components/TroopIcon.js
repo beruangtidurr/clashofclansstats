@@ -16,7 +16,8 @@ export function getTroopImageUrl(name, type) {
     return `https://assets.clashk.ing/pets/${formattedName}/icon.webp`;
   }
   if (type === 'spell') {
-    return `https://assets.clashk.ing/spells/${formattedName}.webp`;
+    const spellName = formattedName.endsWith('_spell') ? formattedName : `${formattedName}_spell`;
+    return `https://assets.clashk.ing/spells/${spellName}.webp`;
   }
   return `https://assets.clashk.ing/troops/${formattedName}/icon.webp`;
 }
@@ -29,6 +30,12 @@ export default function TroopIcon({
   isActiveSuperTroop = false,
 }) {
   const [imageError, setImageError] = useState(false);
+  const [prevKey, setPrevKey] = useState(`${type}-${name}`);
+
+  if (prevKey !== `${type}-${name}`) {
+    setPrevKey(`${type}-${name}`);
+    setImageError(false);
+  }
 
   if (!name) return null;
 
