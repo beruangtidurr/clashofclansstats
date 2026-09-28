@@ -1,7 +1,9 @@
 // src/app/page.js
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
@@ -13,7 +15,10 @@ import CwlHistory from '@/components/CwlHistory';
 import SavedPlayers, { useSavedPlayers, normalizeTag, StarIcon } from '@/components/SavedPlayers';
 import Image from 'next/image';
 
-export default function Home() {
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const queryTag = searchParams.get('tag');
+
   const [tag, setTag] = useState('');
   const [player, setPlayer] = useState(null);
   const [error, setError] = useState(null);
@@ -37,7 +42,7 @@ export default function Home() {
     enrichSavedPlayer,
   } = useSavedPlayers();
 
-  const searchPlayer = async (targetTag) => {
+  const searchPlayer = useCallback(async (targetTag) => {
     const cleanTag = (targetTag || tag).trim();
     if (!cleanTag) return;
 
@@ -84,7 +89,19 @@ export default function Home() {
     setLoading(false);
     setBattleLoading(false);
     setCwlLoading(false);
-  };
+  }, [tag, enrichSavedPlayer]);
+
+  useEffect(() => {
+    if (queryTag) {
+      const clean = queryTag.trim();
+      if (clean) {
+        // Wrap in microtask to avoid synchronous cascading render warning
+        queueMicrotask(() => {
+          searchPlayer(clean);
+        });
+      }
+    }
+  }, [queryTag, searchPlayer]);
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();
@@ -102,13 +119,21 @@ export default function Home() {
   return (
     <main className="max-w-2xl w-full mx-auto py-10 px-4 sm:px-6 font-sans antialiased">
       {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
-          Clash of Clans
-        </h1>
-        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-          Player stats, attacks & CWL performance
-        </p>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+            Clash of Clans
+          </h1>
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+            Player stats, attacks & CWL performance
+          </p>
+        </div>
+        <Link
+          href="/clan"
+          className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 shrink-0"
+        >
+          Find Clan →
+        </Link>
       </div>
 
       {/* Minimalist Search Form */}
@@ -193,7 +218,11 @@ export default function Home() {
 
                   {/* Clan Row */}
                   {player.clan ? (
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <Link
+                      href={`/clan/${encodeURIComponent(player.clan.tag)}`}
+                      className="group inline-flex items-center gap-1.5 mt-0.5 px-2 py-0.5 -ml-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
+                      title={`View ${player.clan.name} clan details & members`}
+                    >
                       {player.clan.badgeUrls?.small && (
                         <div className="relative w-4 h-4 shrink-0">
                           <Image
@@ -205,10 +234,23 @@ export default function Home() {
                           />
                         </div>
                       )}
-                      <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                      <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:underline underline-offset-2 transition-colors">
                         {player.clan.name}
                       </span>
-                    </div>
+                      {player.clan.clanLevel && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-neutral-200/60 dark:border-neutral-700/60">
+                          Lv.{player.clan.clanLevel}
+                        </span>
+                      )}
+                      <svg
+                        className="w-3.5 h-3.5 text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-transform group-hover:translate-x-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
                   ) : (
                     <div className="text-xs text-neutral-400 mt-0.5">
                       No Clan
@@ -407,5 +449,22 @@ export default function Home() {
         </>
       )}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <main className="max-w-2xl w-full mx-auto py-10 px-4 sm:px-6 font-sans antialiased">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-neutral-200 dark:bg-neutral-800 rounded w-1/3"></div>
+            <div className="h-10 bg-neutral-200 dark:bg-neutral-800 rounded-2xl"></div>
+          </div>
+        </main>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }

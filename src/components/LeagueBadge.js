@@ -1,17 +1,20 @@
 // src/components/LeagueBadge.js
 import Image from 'next/image';
 
-export default function LeagueBadge({ leagueTier, showName = true }) {
+export default function LeagueBadge({ leagueTier, showName = true, size = 'md' }) {
   if (!leagueTier?.iconUrls?.small) return null;
+
+  const sizeClass = size === 'sm' ? 'w-5 h-5' : 'w-7 h-7 sm:w-8 sm:h-8';
+  const pixelSize = size === 'sm' ? 20 : 32;
 
   return (
     <div className="flex items-center gap-1.5">
-      <div className="relative w-7 h-7 sm:w-8 sm:h-8 shrink-0">
+      <div className={`relative ${sizeClass} shrink-0`}>
         <Image
           src={leagueTier.iconUrls.small}
           alt={leagueTier.name || 'League Badge'}
           fill
-          sizes="32px"
+          sizes={`${pixelSize}px`}
           className="object-contain"
         />
       </div>
