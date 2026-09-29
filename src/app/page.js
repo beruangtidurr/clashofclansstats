@@ -353,7 +353,7 @@ function HomeContent() {
                 Heroes
               </div>
               {player.heroes && player.heroes.filter((hero) => hero.village === 'home').length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="flex flex-wrap gap-2 sm:gap-2.5">
                   {player.heroes
                     .filter((hero) => hero.village === 'home')
                     .map((hero) => (
@@ -376,7 +376,7 @@ function HomeContent() {
                 Equipment
               </div>
               {player.heroEquipment && player.heroEquipment.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="flex flex-wrap gap-2 sm:gap-2.5">
                   {player.heroEquipment.map((gear) => (
                     <EquipmentIcon
                       key={gear.name}
