@@ -25,7 +25,7 @@ export default function HeroIcon({ name, level = 1, maxLevel }) {
       title={`${name} (Lv. ${level}${maxLevel ? ` / ${maxLevel}` : ''})`}
     >
       <div
-        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800/80 border transition-all select-none shadow-xs flex items-center justify-center ${
+        className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800/80 border transition-all select-none shadow-xs flex items-center justify-center ${
           isMax
             ? 'border-amber-400/60 dark:border-amber-500/50 hover:border-amber-500 dark:hover:border-amber-400'
             : 'border-neutral-200/60 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700'
@@ -36,8 +36,8 @@ export default function HeroIcon({ name, level = 1, maxLevel }) {
             src={imageUrl}
             alt={name}
             fill
-            sizes="(max-width: 640px) 56px, 64px"
-            className="object-contain p-1 group-hover:scale-105 transition-transform duration-200"
+            sizes="(max-width: 640px) 40px, 44px"
+            className="object-contain p-0.5 group-hover:scale-105 transition-transform duration-200"
             onError={() => setImageError(true)}
           />
         ) : (
@@ -47,15 +47,15 @@ export default function HeroIcon({ name, level = 1, maxLevel }) {
         )}
 
         {/* Level badge inside image left corner */}
-        <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/75 dark:bg-black/85 backdrop-blur-xs text-white text-[10px] sm:text-[11px] font-mono font-bold leading-none shadow-sm flex items-center gap-0.5 pointer-events-none transition-all z-10">
-          <span>Lv {level}</span>
+        <div className="absolute bottom-0.5 left-0.5 px-1 py-0.5 rounded bg-black/75 dark:bg-black/85 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-mono font-bold leading-none shadow-sm flex items-center gap-0.5 pointer-events-none transition-all z-10">
+          <span>{level}</span>
           {maxLevel && (
             <span className="hidden group-hover:inline text-neutral-300 dark:text-neutral-400 font-normal">
               /{maxLevel}
             </span>
           )}
           {isMax && (
-            <span className="hidden group-hover:inline text-[9px] font-sans font-semibold text-amber-400 ml-0.5">
+            <span className="hidden group-hover:inline text-[8px] font-sans font-semibold text-amber-400 ml-0.5">
               MAX
             </span>
           )}
