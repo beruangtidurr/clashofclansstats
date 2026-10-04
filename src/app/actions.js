@@ -38,51 +38,6 @@ export async function getPlayerData(playerTag) {
   return { data };
 }
 
-export async function verifyPlayerApiToken(playerTag, playerApiToken) {
-  const token = getApiToken();
-
-  if (!token) {
-    throw new Error('API token missing in environment variables');
-  }
-
-  if (!playerTag) {
-    return { error: 'Player tag is required' };
-  }
-
-  if (!playerApiToken?.trim()) {
-    return { error: 'Player API token is required' };
-  }
-
-  const formattedTag = decodeURIComponent(playerTag).trim().toUpperCase().replace(/^#/, '');
-  const encodedTag = `%23${formattedTag}`;
-
-  try {
-    const response = await fetch(
-      `https://api.clashofclans.com/v1/players/${encodedTag}/verifytoken`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: playerApiToken.trim() }),
-        cache: 'no-store',
-      }
-    );
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      return { error: data.message || `Error ${response.status}: Failed to verify player token` };
-    }
-
-    return { data };
-  } catch (err) {
-    return { error: err.message || 'Failed to verify player token' };
-  }
-}
-
 export async function getPlayerBattleHistory(playerTag) {
   if (!playerTag) {
     return { data: [] };
