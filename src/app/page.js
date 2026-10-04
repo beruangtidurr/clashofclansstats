@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory } from './actions';
+import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory, verifyPlayerApiToken } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
 import HeroIcon from '@/components/HeroIcon';
@@ -13,6 +13,7 @@ import TroopLevels from '@/components/TroopLevels';
 import BattleHistory from '@/components/BattleHistory';
 import CwlHistory from '@/components/CwlHistory';
 import SavedPlayers, { useSavedPlayers, normalizeTag, StarIcon } from '@/components/SavedPlayers';
+import BaseTracker from '@/components/BaseTracker';
 import Image from 'next/image';
 
 function HomeContent() {
@@ -194,6 +195,11 @@ function HomeContent() {
         onSelectPlayer={(selectedTag) => searchPlayer(selectedTag)}
         onRemovePlayer={(tagToRemove) => handleRemoveSavedPlayer(tagToRemove)}
         onClearAll={handleClearAllSaved}
+      />
+
+      <BaseTracker
+        player={player}
+        onVerifyToken={verifyPlayerApiToken}
       />
 
       {/* Error state */}
