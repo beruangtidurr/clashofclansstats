@@ -119,7 +119,7 @@ function HomeContent() {
   return (
     <main className="max-w-2xl w-full mx-auto py-10 px-4 sm:px-6 font-sans antialiased">
       {/* Page Header */}
-      <div className="flex items-center justify-between gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
             Clash of Clans
@@ -128,18 +128,6 @@ function HomeContent() {
             Player stats, attacks & CWL performance
           </p>
         </div>
-        <Link
-          href="/clan"
-          className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 shrink-0"
-        >
-          Find Clan →
-        </Link>
-        <Link
-          href="/track"
-          className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 shrink-0"
-        >
-          Track village →
-        </Link>
       </div>
 
       {/* Minimalist Search Form */}

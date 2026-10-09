@@ -280,7 +280,6 @@ export default function TrackPage() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8 font-sans antialiased sm:px-6 sm:py-12">
       <header className="mb-8 flex items-center justify-between gap-4">
         <div>
-          <Link href="/" className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">← Clash of Stats</Link>
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">Village tracker</h1>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Plan upgrades and keep your village progress in one place.</p>
         </div>
