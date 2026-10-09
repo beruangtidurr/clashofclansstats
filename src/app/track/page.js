@@ -6,18 +6,10 @@ import Image from 'next/image';
 import { getPlayerData } from '../actions';
 import TownHallImage from '@/components/TownHallImage';
 import TOWNHALL_MAX_LEVELS from './townhall-max-levels.json';
+import ITEM_NAMES from './item-names.json';
 
 const STORAGE_KEY = 'coc-village-tracker-v1';
 const IMPORT_KEY = 'coc-village-import-latest-v1';
-const ITEM_NAMES = {
-  1000000: 'Army Camp', 1000001: 'Town Hall', 1000002: 'Elixir Collector', 1000003: 'Elixir Storage', 1000004: 'Gold Mine', 1000005: 'Gold Storage', 1000006: 'Barracks', 1000007: 'Laboratory', 1000008: 'Cannon', 1000009: 'Archer Tower', 1000010: 'Wall', 1000011: 'Wizard Tower', 1000012: 'Air Defense', 1000013: 'Mortar', 1000014: 'Clan Castle', 1000015: 'Builder Hut', 1000019: 'Hidden Tesla', 1000020: 'Spell Factory', 1000021: 'X-Bow', 1000023: 'Dark Elixir Drill', 1000024: 'Dark Elixir Storage', 1000026: 'Dark Barracks', 1000027: 'Inferno Tower', 1000028: 'Air Sweeper', 1000029: 'Dark Spell Factory', 1000031: 'Eagle Artillery', 1000032: 'Bomb Tower', 1000059: 'Workshop', 1000067: 'Scattershot', 1000068: 'Pet House', 1000070: 'Blacksmith', 1000071: 'Hero Hall', 1000072: 'Spell Tower', 1000077: 'Monolith', 1000093: 'Helper Hut',
-  12000000: 'Bomb', 12000001: 'Spring Trap', 12000002: 'Air Bomb', 12000005: 'Giant Bomb', 12000006: 'Seeking Air Mine', 12000008: 'Skeleton Trap', 12000010: 'Push Trap', 12000011: 'Mine', 12000013: 'Mega Mine', 12000014: 'Guard Post Trap', 12000016: 'Tornado Trap',
-  28000000: 'Barbarian King', 28000001: 'Archer Queen', 28000002: 'Minion Prince', 28000003: 'Battle Machine', 28000004: 'Royal Champion', 28000005: 'Battle Copter', 28000006: 'Grand Warden', 28000007: 'Dragon Duke',
-  4000000: 'Barbarian', 4000001: 'Archer', 4000002: 'Giant', 4000003: 'Goblin', 4000004: 'Wall Breaker', 4000005: 'Balloon', 4000006: 'Wizard', 4000007: 'Healer', 4000008: 'Dragon', 4000009: 'P.E.K.K.A', 4000010: 'Baby Dragon', 4000011: 'Hog Rider', 4000012: 'Valkyrie', 4000013: 'Golem', 4000015: 'Witch', 4000017: 'Lava Hound', 4000022: 'Bowler', 4000023: 'Minion', 4000024: 'Miner', 4000051: 'Wall Wrecker', 4000052: 'Battle Blimp', 4000053: 'Yeti', 4000058: 'Ice Golem', 4000059: 'Electro Dragon', 4000062: 'Stone Slammer', 4000065: 'Dragon Rider', 4000075: 'Siege Barracks', 4000082: 'Headhunter', 4000087: 'Log Launcher', 4000091: 'Flame Flinger', 4000092: 'Battle Drill', 4000095: 'Electro Titan', 4000097: 'Apprentice Warden', 4000110: 'Root Rider', 4000123: 'Druid',
-  26000000: 'Lightning Spell', 26000001: 'Healing Spell', 26000002: 'Rage Spell', 26000003: 'Jump Spell', 26000005: 'Freeze Spell', 26000009: 'Poison Spell', 26000010: 'Earthquake Spell', 26000011: 'Haste Spell', 26000016: 'Clone Spell', 26000017: 'Skeleton Spell', 26000028: 'Bat Spell', 26000035: 'Invisibility Spell', 26000053: 'Recall Spell', 26000070: 'Overgrowth Spell',
-  73000000: 'L.A.S.S.I', 73000001: 'Electro Owl', 73000002: 'Mighty Yak', 73000003: 'Unicorn', 73000007: 'Frosty', 73000008: 'Diggy', 73000009: 'Poison Lizard',
-  90000000: 'Barbarian Puppet', 90000001: 'Rage Vial', 90000002: 'Earthquake Boots', 90000003: 'Vampstache', 90000004: 'Giant Gauntlet', 90000005: 'Spiky Ball', 90000006: 'Archer Puppet', 90000007: 'Invisibility Vial', 90000008: 'Giant Arrow', 90000009: 'Healer Puppet', 90000010: 'Eternal Tome', 90000011: 'Life Gem', 90000012: 'Rage Gem', 90000013: 'Healing Tome', 90000014: 'Fireball', 90000015: 'Royal Gem', 90000016: 'Seeking Shield', 90000017: 'Haste Vial', 90000018: 'Hog Rider Puppet',
-};
 const CATEGORIES = [
   { id: 'buildings', label: 'Buildings', key: 'buildings', icon: '🏰' },
   { id: 'heroes', label: 'Heroes', key: 'heroes', icon: '👑' },
@@ -44,13 +36,28 @@ function formatTimeLeft(milliseconds) {
 }
 
 function maxLevelAtHall(item, hallLevel, village = 'home') {
-  const id = item.dataId || Object.keys(ITEM_NAMES).find((key) => ITEM_NAMES[key] === item.name);
+  const id = item.dataId;
   const key = `${village}:${id}`;
   const caps = TOWNHALL_MAX_LEVELS[key];
   const limit = village === 'builder' ? 10 : 18;
   const level = Number(hallLevel);
   if (!caps || !level) return Number(item.maxLevel) || 0;
   return caps[Math.max(0, Math.min(limit - 1, level - 1))] || 0;
+}
+
+function normalizeItemNames(player) {
+  const collections = ['buildings', 'heroes', 'troops', 'pets', 'spells', 'heroEquipment'];
+  return {
+    ...player,
+    ...Object.fromEntries(collections.map((collection) => [
+      collection,
+      (player[collection] || []).map((item) => {
+        const namespace = item.village === 'builderBase' ? 'builder' : 'home';
+        const name = ITEM_NAMES[`${namespace}:${item.dataId}`];
+        return name ? { ...item, name } : item;
+      }),
+    ])),
+  };
 }
 
 function getItems(player) {
@@ -75,7 +82,8 @@ function fromGameExport(data) {
   const entries = (list, village = 'home', prefix = 'Item') => (list || []).flatMap((item) => {
     if (!item || !Number.isFinite(Number(item.data))) return [];
     const id = Number(item.data);
-    const baseName = ITEM_NAMES[id] || `${prefix} ${id}`;
+    const nameSpace = village === 'builderBase' ? 'builder' : 'home';
+    const baseName = ITEM_NAMES[`${nameSpace}:${id}`] || `${prefix} ${id}`;
     const count = Math.max(1, Number(item.cnt) || 1);
     return [{
       name: baseName,
@@ -132,8 +140,10 @@ export default function TrackPage() {
       setProgress({});
     }
     try {
-      const savedVillage = JSON.parse(localStorage.getItem(IMPORT_KEY) || 'null');
-      if (savedVillage?.tag) {
+      const storedVillage = JSON.parse(localStorage.getItem(IMPORT_KEY) || 'null');
+      if (storedVillage?.tag) {
+        const savedVillage = normalizeItemNames(storedVillage);
+        localStorage.setItem(IMPORT_KEY, JSON.stringify(savedVillage));
         setPlayer(savedVillage);
         setTag(savedVillage.tag);
         setImportMessage(`Restored saved village ${savedVillage.tag}.`);

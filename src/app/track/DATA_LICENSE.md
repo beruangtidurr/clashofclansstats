@@ -1,5 +1,5 @@
-The Home Village and Builder Base level caps in `townhall-max-levels.json` are
-derived from `clash-of-clans-data` 0.18.1:
+The item names in `item-names.json` and the Home Village and Builder Base level
+caps in `townhall-max-levels.json` are derived from `clash-of-clans-data` 0.18.1:
 https://github.com/chiefpansancolt/clash-of-clans-data
 
 Copyright (c) 2026 Christopher Pezza
