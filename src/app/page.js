@@ -134,6 +134,12 @@ function HomeContent() {
         >
           Find Clan →
         </Link>
+        <Link
+          href="/track"
+          className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 shrink-0"
+        >
+          Track village →
+        </Link>
       </div>
 
       {/* Minimalist Search Form */}
