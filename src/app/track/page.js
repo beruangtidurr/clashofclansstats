@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getPlayerData } from '../actions';
@@ -22,6 +22,22 @@ const CATEGORIES = [
   { id: 'builderTroops', label: 'Builder troops', key: 'builderTroops', icon: '⚔️' },
   { id: 'builderHeroes', label: 'Builder heroes', key: 'builderHeroes', icon: '👑' },
 ];
+const BUILDING_GROUPS = ['All', 'Army', 'Defenses', 'Resources', 'Other'];
+const SORT_OPTIONS = [
+  ['default', 'Default order'],
+  ['maxed', 'Maxed first'],
+  ['shortest', 'Shortest time left'],
+  ['levels', 'Fewest levels to max'],
+  ['name', 'Name A–Z'],
+];
+
+function buildingGroup(item) {
+  const name = item.name.toLowerCase();
+  if (/army camp|barracks|laboratory|clan castle|spell factory|workshop|blacksmith|pet house|hero hall|crafting station/.test(name)) return 'Army';
+  if (/wall|trap|cannon|tower|mortar|artillery|defense|defence|air sweeper|scattershot|monolith|firespitter|eagle|revenge|ricochet|multi-archer|multi-gear/.test(name)) return 'Defenses';
+  if (/collector|storage|mine|drill/.test(name)) return 'Resources';
+  return 'Other';
+}
 
 function tagKey(tag) {
   return (tag || '').trim().toUpperCase().replace(/^#/, '');
@@ -33,7 +49,14 @@ function formatTimeLeft(milliseconds) {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  return [days ? `${days}d` : '', hours ? `${hours}h` : '', `${minutes}m`].filter(Boolean).join(' ');
+  const remainingSeconds = seconds % 60;
+  return days
+    ? `${days}d ${hours}h ${minutes}m`
+    : hours
+      ? `${hours}h ${minutes}m ${remainingSeconds}s`
+      : minutes
+        ? `${minutes}m ${remainingSeconds}s`
+        : `${remainingSeconds}s`;
 }
 
 function maxLevelAtHall(item, hallLevel, village = 'home') {
@@ -131,6 +154,10 @@ export default function TrackPage() {
   const [progress, setProgress] = useState({});
   const [hydrated, setHydrated] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [buildingGroupFilter, setBuildingGroupFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('default');
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef(null);
   const [importMessage, setImportMessage] = useState('');
   const [now, setNow] = useState(Date.now());
   const [savedAccounts, setSavedAccounts] = useState([]);
@@ -174,9 +201,48 @@ export default function TrackPage() {
   }, [progress, hydrated]);
 
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(interval);
+    if (!hydrated || !player?._imported || player.name !== 'Imported village') return undefined;
+    let cancelled = false;
+    getPlayerData(player.tag).then((result) => {
+      const name = result?.data?.name;
+      if (cancelled || !name) return;
+      const namedVillage = { ...player, name };
+      setPlayer((currentPlayer) => currentPlayer?.tag === player.tag ? namedVillage : currentPlayer);
+      const storedAccounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}');
+      const accounts = storedAccounts && typeof storedAccounts === 'object' ? storedAccounts : {};
+      accounts[tagKey(player.tag)] = namedVillage;
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+      localStorage.setItem(IMPORT_KEY, JSON.stringify(namedVillage));
+      setSavedAccounts(Object.values(accounts));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [player, hydrated]);
+
+  useEffect(() => {
+    const updateTime = () => setNow(Date.now());
+    const interval = setInterval(updateTime, 1_000);
+    window.addEventListener('focus', updateTime);
+    document.addEventListener('visibilitychange', updateTime);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', updateTime);
+      document.removeEventListener('visibilitychange', updateTime);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!sortMenuOpen) return undefined;
+    const closeMenu = (event) => {
+      if (event.key === 'Escape') setSortMenuOpen(false);
+      if (event.type === 'pointerdown' && !sortMenuRef.current?.contains(event.target)) setSortMenuOpen(false);
+    };
+    document.addEventListener('keydown', closeMenu);
+    document.addEventListener('pointerdown', closeMenu);
+    return () => {
+      document.removeEventListener('keydown', closeMenu);
+      document.removeEventListener('pointerdown', closeMenu);
+    };
+  }, [sortMenuOpen]);
 
   const playerProgress = progress[tagKey(player?.tag)] || {};
   const lookup = useCallback(async (event) => {
@@ -240,7 +306,10 @@ export default function TrackPage() {
 
   const itemsByCategory = useMemo(() => getItems(player), [player]);
   const current = CATEGORIES.find((item) => item.id === category);
-  const items = itemsByCategory[current?.key] || [];
+  const allCategoryItems = itemsByCategory[current?.key] || [];
+  const items = category === 'buildings' && buildingGroupFilter !== 'All'
+    ? allCategoryItems.filter((item) => buildingGroup(item) === buildingGroupFilter)
+    : allCategoryItems;
   const itemMaxLevel = (item, group = category) => {
     const builder = group.startsWith('builder') || item.village === 'builderBase';
     return maxLevelAtHall(item, builder ? player?.builderHallLevel : player?.townHallLevel, builder ? 'builder' : 'home');
@@ -253,6 +322,14 @@ export default function TrackPage() {
   const filteredItems = items.filter((item) => {
     const status = itemStatus(category, item);
     return filter === 'all' || (filter === 'upgrading' && status === 'upgrading') || (filter === 'todo' && status !== 'complete') || (filter === 'complete' && status === 'complete');
+  }).sort((a, b) => {
+    const aCap = itemMaxLevel(a);
+    const bCap = itemMaxLevel(b);
+    if (sortBy === 'maxed') return Number(bCap > 0 && b.level >= bCap) - Number(aCap > 0 && a.level >= aCap) || a.name.localeCompare(b.name);
+    if (sortBy === 'shortest') return (a.timerEndsAt && a.timerEndsAt > now ? a.timerEndsAt - now : Infinity) - (b.timerEndsAt && b.timerEndsAt > now ? b.timerEndsAt - now : Infinity) || a.name.localeCompare(b.name);
+    if (sortBy === 'levels') return (aCap ? aCap - a.level : Infinity) - (bCap ? bCap - b.level : Infinity) || a.name.localeCompare(b.name);
+    if (sortBy === 'name') return a.name.localeCompare(b.name) || a.level - b.level;
+    return 0;
   });
   const completedCount = items.filter((item) => itemStatus(category, item) === 'complete').length;
   const maxedRows = items.flatMap((item) => {
@@ -301,7 +378,7 @@ export default function TrackPage() {
         </div>
         {savedAccounts.length ? <div className="flex flex-wrap gap-2">{savedAccounts.map((account) => {
           const active = tagKey(player?.tag) === tagKey(account.tag);
-          return <button key={tagKey(account.tag)} type="button" onClick={() => switchAccount(account)} aria-pressed={active} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${active ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900' : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800'}`}><span className="text-xs font-semibold">{account.name || 'Imported village'}</span><span className={`font-mono text-[10px] ${active ? 'opacity-70' : 'text-neutral-400'}`}>{account.tag}</span></button>;
+          return <button key={tagKey(account.tag)} type="button" onClick={() => switchAccount(account)} aria-pressed={active} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${active ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900' : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800'}`}><span className="text-xs font-semibold">{account.name && account.name !== 'Imported village' ? account.name : `Village ${account.tag}`}</span><span className={`font-mono text-[10px] ${active ? 'opacity-70' : 'text-neutral-400'}`}>{account.tag}</span></button>;
         })}</div> : <p className="rounded-xl bg-neutral-50 px-3 py-2.5 text-xs text-neutral-400 dark:bg-neutral-950">Your loaded villages will appear here.</p>}
       </section>
       <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/50 sm:flex-row sm:items-center sm:justify-between sm:p-5">
@@ -322,7 +399,7 @@ export default function TrackPage() {
 
       {player && <>
         <section className="mb-5 flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/50 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div className="flex items-center gap-3"><TownHallImage level={player.townHallLevel} /><div><h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{player.name}</h2><p className="font-mono text-xs text-neutral-500">{player.tag}{player.clan ? ` · ${player.clan.name}` : ''}</p></div></div>
+          <div className="flex items-center gap-3"><TownHallImage level={player.townHallLevel} /><div><h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{player.name === 'Imported village' ? `Village ${player.tag}` : player.name}</h2><p className="font-mono text-xs text-neutral-500">{player.tag}{player.clan ? ` · ${player.clan.name}` : ''}</p></div></div>
           <div className="grid grid-cols-3 gap-5 text-center sm:text-right"><div><div className="text-[10px] uppercase tracking-wider text-neutral-400">Town Hall</div><div className="mt-1 font-mono text-sm font-bold text-neutral-900 dark:text-neutral-100">TH {player.townHallLevel}</div></div><div><div className="text-[10px] uppercase tracking-wider text-neutral-400">Trophies</div><div className="mt-1 font-mono text-sm font-bold text-neutral-900 dark:text-neutral-100">{player.trophies?.toLocaleString()}</div></div><div><div className="text-[10px] uppercase tracking-wider text-neutral-400">Player level</div><div className="mt-1 font-mono text-sm font-bold text-neutral-900 dark:text-neutral-100">{player.expLevel}</div></div></div>
         </section>
 
@@ -339,6 +416,16 @@ export default function TrackPage() {
           <section className="min-w-0 rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900/50">
             <div className="border-b border-neutral-100 p-4 dark:border-neutral-800 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">{current?.label}</h2><p className="mt-1 text-xs text-neutral-500">{eligibleCount ? `${maxedCount} of ${eligibleCount} maxed for ${category.startsWith('builder') ? `BH ${player?.builderHallLevel}` : `TH ${player?.townHallLevel}`}${category === 'buildings' ? '' : ` · ${progressPercent}% level progress`}` : `${completedCount} of ${items.length} marked complete`}</p></div><div className="flex rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800">{[['all', 'All'], ['todo', 'To do'], ['upgrading', 'Upgrading'], ['complete', 'Done']].map(([id, label]) => <button key={id} onClick={() => setFilter(id)} className={`rounded-md px-2 py-1.5 text-[10px] font-medium transition sm:px-2.5 ${filter === id ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-white' : 'text-neutral-500'}`}>{label}</button>)}</div></div>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                {category === 'buildings' && <div className="flex flex-wrap gap-2" aria-label="Building category">{BUILDING_GROUPS.map((group) => {
+                  const count = group === 'All' ? allCategoryItems.length : allCategoryItems.filter((item) => buildingGroup(item) === group).length;
+                  return <button key={group} type="button" onClick={() => setBuildingGroupFilter(group)} aria-pressed={buildingGroupFilter === group} className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${buildingGroupFilter === group ? 'border-neutral-800 bg-neutral-800 text-white dark:border-neutral-200 dark:bg-neutral-200 dark:text-neutral-900' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800'}`}>{group}<span className="ml-1.5 opacity-60">{count}</span></button>;
+                })}</div>}
+                <div ref={sortMenuRef} className="relative ml-auto">
+                  <button type="button" onClick={() => setSortMenuOpen((value) => !value)} aria-haspopup="listbox" aria-expanded={sortMenuOpen} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400/40 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"><svg className="h-3.5 w-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M7 12h10m-7 5h4" /></svg><span className="text-neutral-400">Sort:</span><span>{SORT_OPTIONS.find(([value]) => value === sortBy)?.[1]}</span><svg className={`h-3.5 w-3.5 text-neutral-400 transition-transform ${sortMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
+                  {sortMenuOpen && <div role="listbox" aria-label="Sort items" className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 shadow-xl shadow-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-900 dark:shadow-black/30">{SORT_OPTIONS.map(([value, label]) => <button key={value} type="button" role="option" aria-selected={sortBy === value} onClick={() => { setSortBy(value); setSortMenuOpen(false); }} className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs transition ${sortBy === value ? 'bg-neutral-100 font-semibold text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100' : 'text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800/70'}`}><span>{label}</span>{sortBy === value && <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.2 7.26a1 1 0 0 1-1.42.003l-3.8-3.8A1 1 0 1 1 5.704 8.75l3.09 3.09 6.493-6.544a1 1 0 0 1 1.417-.006Z" clipRule="evenodd" /></svg>}</button>)}</div>}
+                </div>
+              </div>
               {eligibleCount > 0 ? <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progressPercent}%` }} /></div> : items.length > 0 && <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.round(completedCount / items.length * 100)}%` }} /></div>}
             </div>
 
