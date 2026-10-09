@@ -10,6 +10,7 @@ import ITEM_NAMES from './item-names.json';
 
 const STORAGE_KEY = 'coc-village-tracker-v1';
 const IMPORT_KEY = 'coc-village-import-latest-v1';
+const ACCOUNTS_KEY = 'coc-village-tracker-accounts-v1';
 const CATEGORIES = [
   { id: 'buildings', label: 'Buildings', key: 'buildings', icon: '🏰' },
   { id: 'heroes', label: 'Heroes', key: 'heroes', icon: '👑' },
@@ -132,6 +133,7 @@ export default function TrackPage() {
   const [filter, setFilter] = useState('all');
   const [importMessage, setImportMessage] = useState('');
   const [now, setNow] = useState(Date.now());
+  const [savedAccounts, setSavedAccounts] = useState([]);
 
   useEffect(() => {
     try {
@@ -140,10 +142,23 @@ export default function TrackPage() {
       setProgress({});
     }
     try {
+      const storedAccounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}');
+      const accounts = storedAccounts && typeof storedAccounts === 'object' ? storedAccounts : {};
+      setSavedAccounts(Object.values(accounts));
       const storedVillage = JSON.parse(localStorage.getItem(IMPORT_KEY) || 'null');
       if (storedVillage?.tag) {
         const savedVillage = normalizeItemNames(storedVillage);
         localStorage.setItem(IMPORT_KEY, JSON.stringify(savedVillage));
+        setPlayer(savedVillage);
+        setTag(savedVillage.tag);
+        accounts[tagKey(savedVillage.tag)] = savedVillage;
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+        setSavedAccounts(Object.values(accounts));
+        setImportMessage(`Restored saved village ${savedVillage.tag}.`);
+      } else if (Object.keys(accounts).length) {
+        const activeTag = localStorage.getItem(`${ACCOUNTS_KEY}-active`);
+        const active = accounts[activeTag] || Object.values(accounts)[0];
+        const savedVillage = normalizeItemNames(active);
         setPlayer(savedVillage);
         setTag(savedVillage.tag);
         setImportMessage(`Restored saved village ${savedVillage.tag}.`);
@@ -173,13 +188,33 @@ export default function TrackPage() {
     try {
       const result = await getPlayerData(tag.trim());
       if (result.error) setError(result.error);
-      else setPlayer(result.data);
+      else {
+        const nextPlayer = normalizeItemNames(result.data);
+        setPlayer(nextPlayer);
+        const key = tagKey(nextPlayer.tag);
+        const nextAccounts = { ...Object.fromEntries(savedAccounts.map((entry) => [tagKey(entry.tag), entry])), [key]: nextPlayer };
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(nextAccounts));
+        localStorage.setItem(`${ACCOUNTS_KEY}-active`, key);
+        setSavedAccounts(Object.values(nextAccounts));
+      }
     } catch (e) {
       setError(e.message || 'Could not load player. Check the tag and try again.');
     } finally {
       setLoading(false);
     }
-  }, [tag]);
+  }, [tag, savedAccounts]);
+
+  const switchAccount = (account) => {
+    const normalized = normalizeItemNames(account);
+    setPlayer(normalized);
+    setTag(normalized.tag);
+    setCategory('buildings');
+    setFilter('all');
+    setError('');
+    setImportMessage(`Switched to saved village ${normalized.tag}.`);
+    localStorage.setItem(`${ACCOUNTS_KEY}-active`, tagKey(normalized.tag));
+    if (normalized._imported) localStorage.setItem(IMPORT_KEY, JSON.stringify(normalized));
+  };
 
   const importJson = async () => {
     setError('');
@@ -190,6 +225,11 @@ export default function TrackPage() {
       setPlayer(imported);
       setTag(imported.tag);
       localStorage.setItem(IMPORT_KEY, JSON.stringify(imported));
+      const key = tagKey(imported.tag);
+      const nextAccounts = { ...Object.fromEntries(savedAccounts.map((entry) => [tagKey(entry.tag), entry])), [key]: imported };
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(nextAccounts));
+      localStorage.setItem(`${ACCOUNTS_KEY}-active`, key);
+      setSavedAccounts(Object.values(nextAccounts));
       setCategory('buildings');
       setFilter('all');
       setImportMessage(`Imported village ${imported.tag}.`);
@@ -255,6 +295,16 @@ export default function TrackPage() {
         </div>
         <p className="mt-2 text-xs text-neutral-400">Progress is stored locally in this browser. Your village levels come from the Clash of Clans player profile.</p>
       </form>
+      <section className="mb-5 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/50 sm:p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div><h2 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Saved accounts</h2><p className="mt-1 text-xs text-neutral-500">Switch between villages saved on this device.</p></div>
+          <span className="rounded-lg bg-neutral-100 px-2 py-1 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800">{savedAccounts.length}</span>
+        </div>
+        {savedAccounts.length ? <div className="flex flex-wrap gap-2">{savedAccounts.map((account) => {
+          const active = tagKey(player?.tag) === tagKey(account.tag);
+          return <button key={tagKey(account.tag)} type="button" onClick={() => switchAccount(account)} aria-pressed={active} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${active ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900' : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800'}`}><span className="text-xs font-semibold">{account.name || 'Imported village'}</span><span className={`font-mono text-[10px] ${active ? 'opacity-70' : 'text-neutral-400'}`}>{account.tag}</span></button>;
+        })}</div> : <p className="rounded-xl bg-neutral-50 px-3 py-2.5 text-xs text-neutral-400 dark:bg-neutral-950">Your loaded villages will appear here.</p>}
+      </section>
       <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/50 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div><h2 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">Paste village JSON</h2><p className="mt-1 text-xs text-neutral-500">Copy your game export first. Imported village data is saved in this browser for next time.</p></div>
         <button type="button" onClick={importJson} className="shrink-0 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800">Paste from clipboard</button>
