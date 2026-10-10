@@ -18,7 +18,7 @@ export async function getPlayerData(playerTag) {
 
   // 2. Fetch from Clash of Clans API
   const response = await fetch(
-    `https://api.clashofclans.com/v1/players/${encodedTag}`,
+    `https://cocproxy.royaleapi.dev/v1/players/${encodedTag}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -132,7 +132,7 @@ export async function getClanData(clanTag) {
 
   try {
     const response = await fetch(
-      `https://api.clashofclans.com/v1/clans/${encodedTag}`,
+      `https://cocproxy.royaleapi.dev/v1/clans/${encodedTag}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -171,7 +171,7 @@ export async function getClanMembers(clanTag) {
 
   try {
     const response = await fetch(
-      `https://api.clashofclans.com/v1/clans/${encodedTag}/members`,
+      `https://cocproxy.royaleapi.dev/v1/clans/${encodedTag}/members`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

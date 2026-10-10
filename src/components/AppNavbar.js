@@ -7,12 +7,14 @@ import { usePathname } from 'next/navigation';
 const LINKS = [
   { href: '/', label: 'Players', icon: 'players' },
   { href: '/clan', label: 'Clans', icon: 'clans' },
+  { href: '/calendar', label: 'Events calendar', icon: 'calendar' },
   { href: '/track', label: 'Village tracker', icon: 'tracker' },
 ];
 
 function NavIcon({ type }) {
   if (type === 'players') return <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.2 0-7 2.1-7 4.5 0 .8.7 1.5 1.5 1.5h11c.8 0 1.5-.7 1.5-1.5 0-2.4-2.8-4.5-7-4.5ZM18.5 5.5a3 3 0 0 1 0 6c-.5 0-1-.1-1.4-.3a5.8 5.8 0 0 0 0-5.4c.4-.2.9-.3 1.4-.3ZM19 13.2c1.3.9 2 2 2 3.3 0 .8-.7 1.5-1.5 1.5h-.6c0-1.8-.7-3.4-2-4.6.7-.2 1.4-.2 2.1-.2Z" /></svg>;
   if (type === 'clans') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true"><path d="m12 3 8 4v5c0 4.5-3.3 7.5-8 9-4.7-1.5-8-4.5-8-9V7l8-4Z" /><path d="m9 12 2 2 4-4" /></svg>;
+  if (type === 'calendar') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" /></svg>;
   return <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true"><circle cx="5" cy="5" r="2" /><circle cx="12" cy="5" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /><circle cx="5" cy="19" r="2" /><circle cx="12" cy="19" r="2" /><circle cx="19" cy="19" r="2" /></svg>;
 }
 

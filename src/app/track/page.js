@@ -12,23 +12,23 @@ const STORAGE_KEY = 'coc-village-tracker-v1';
 const IMPORT_KEY = 'coc-village-import-latest-v1';
 const ACCOUNTS_KEY = 'coc-village-tracker-accounts-v1';
 const CATEGORIES = [
-  { id: 'buildings', label: 'Buildings', key: 'buildings', icon: '🏰' },
-  { id: 'heroes', label: 'Heroes', key: 'heroes', icon: '👑' },
-  { id: 'troops', label: 'Troops', key: 'troops', icon: '⚔️' },
-  { id: 'pets', label: 'Pets', key: 'pets', icon: '🐾' },
-  { id: 'spells', label: 'Spells', key: 'spells', icon: '✨' },
-  { id: 'equipment', label: 'Equipment', key: 'heroEquipment', icon: '🛡️' },
-  { id: 'builderBuildings', label: 'Builder Base', key: 'builderBuildings', icon: '🛠️' },
-  { id: 'builderTroops', label: 'Builder troops', key: 'builderTroops', icon: '⚔️' },
-  { id: 'builderHeroes', label: 'Builder heroes', key: 'builderHeroes', icon: '👑' },
+  { id: 'buildings', label: 'Buildings', key: 'buildings', icon: '' },
+  { id: 'heroes', label: 'Heroes', key: 'heroes', icon: '' },
+  { id: 'troops', label: 'Troops', key: 'troops', icon: '' },
+  { id: 'pets', label: 'Pets', key: 'pets', icon: '' },
+  { id: 'spells', label: 'Spells', key: 'spells', icon: '' },
+  { id: 'equipment', label: 'Equipment', key: 'heroEquipment', icon: '' },
+  { id: 'builderBuildings', label: 'Builder Base', key: 'builderBuildings', icon: '' },
+  { id: 'builderTroops', label: 'Builder troops', key: 'builderTroops', icon: '' },
+  { id: 'builderHeroes', label: 'Builder heroes', key: 'builderHeroes', icon: '' },
 ];
 const BUILDING_GROUPS = ['All', 'Army', 'Defenses', 'Resources', 'Other'];
 const SORT_OPTIONS = [
   ['default', 'Default order'],
   ['maxed', 'Maxed first'],
-  ['shortest', 'Shortest time left'],
-  ['levels', 'Fewest levels to max'],
-  ['name', 'Name A–Z'],
+  ['shortest', 'Time Remaining'],
+  ['levels', 'Levels Remaining'],
+  ['name', 'Alphabetical'],
 ];
 
 function buildingGroup(item) {
