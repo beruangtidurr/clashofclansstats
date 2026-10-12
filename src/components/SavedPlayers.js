@@ -2,6 +2,7 @@
 'use client';
 
 import { useSyncExternalStore, useMemo, useCallback } from 'react';
+import TownHallImage from '@/components/TownHallImage';
 
 const STORAGE_KEY = 'coc_saved_players';
 const STORAGE_EVENT = 'coc-saved-players-updated';
@@ -91,6 +92,8 @@ export function useSavedPlayers() {
         name: playerData.name || existing?.name || '',
         townHallLevel: playerData.townHallLevel || existing?.townHallLevel || null,
         clanName: playerData.clan?.name || playerData.clanName || existing?.clanName || '',
+        clanRole: playerData.role || existing?.clanRole || '',
+        trophies: playerData.trophies ?? existing?.trophies ?? null,
         savedAt: Date.now(),
       };
 
@@ -138,7 +141,9 @@ export function useSavedPlayers() {
       if (
         existing.name !== (playerData.name || '') ||
         existing.townHallLevel !== (playerData.townHallLevel || null) ||
-        existing.clanName !== (playerData.clan?.name || '')
+        existing.clanName !== (playerData.clan?.name || '') ||
+        existing.clanRole !== (playerData.role || '') ||
+        existing.trophies !== (playerData.trophies ?? null)
       ) {
         const updated = savedPlayers.map((item) => {
           if (normalizeTag(item.tag) === normTag) {
@@ -147,6 +152,8 @@ export function useSavedPlayers() {
               name: playerData.name || item.name,
               townHallLevel: playerData.townHallLevel || item.townHallLevel,
               clanName: playerData.clan?.name || item.clanName,
+              clanRole: playerData.role || item.clanRole,
+              trophies: playerData.trophies ?? item.trophies,
             };
           }
           return item;
@@ -214,72 +221,53 @@ export default function SavedPlayers({
   const normalizedCurrent = normalizeTag(currentTag);
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-2 px-0.5">
-        <span className="text-[11px] font-medium tracking-wide uppercase text-neutral-400 dark:text-neutral-500 flex items-center gap-1.5">
-          <StarIcon filled className="w-3 h-3 text-amber-500 shrink-0" />
-          Saved ({savedPlayers.length})
+    <div className="mb-8 rounded-2xl border border-neutral-200 bg-neutral-50/70 px-4 py-4 dark:border-neutral-800 dark:bg-neutral-900/70 sm:px-6 sm:py-5">
+      <div className="mx-auto max-w-2xl">
+      <div className="mb-3 flex items-center justify-between px-0.5">
+        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+          Bookmarked Players
         </span>
         {savedPlayers.length > 1 && (
           <button
             type="button"
             onClick={onClearAll}
-            className="text-[11px] text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors cursor-pointer"
+            className="text-xs text-neutral-400 transition-colors hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer"
           >
             Clear all
           </button>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="divide-y divide-neutral-200/80 dark:divide-neutral-800">
         {savedPlayers.map((item) => {
           const itemTag = normalizeTag(item.tag);
           const isSelected = normalizedCurrent && normalizedCurrent === itemTag;
+          const role = item.clanRole === 'coLeader' ? 'Co-Leader' : item.clanRole ? `${item.clanRole[0].toUpperCase()}${item.clanRole.slice(1)}` : '';
 
           return (
             <div
               key={item.tag}
-              className={`group inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-full text-xs transition-all ${
-                isSelected
-                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-950 font-medium shadow-xs'
-                  : 'bg-neutral-100/80 hover:bg-neutral-200/80 dark:bg-neutral-800/60 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200/50 dark:border-neutral-700/40'
-              }`}
+              className={`group flex min-h-[72px] items-center gap-3 py-3 transition-colors ${isSelected ? 'bg-neutral-100/80 dark:bg-neutral-800/50' : 'hover:bg-neutral-100/60 dark:hover:bg-neutral-800/30'}`}
             >
               <button
                 type="button"
                 onClick={() => onSelectPlayer && onSelectPlayer(item.tag)}
-                className="flex items-center gap-1.5 cursor-pointer text-left"
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left cursor-pointer"
                 title={`View stats for ${item.name || item.tag}`}
               >
-                {item.name ? (
-                  <>
-                    <span className="font-medium">{item.name}</span>
-                    <span
-                      className={`text-[10px] font-mono ${
-                        isSelected
-                          ? 'text-neutral-300 dark:text-neutral-600'
-                          : 'text-neutral-400 dark:text-neutral-500'
-                      }`}
-                    >
-                      {item.tag}
-                    </span>
-                  </>
-                ) : (
-                  <span className="font-mono">{item.tag}</span>
-                )}
-
-                {item.townHallLevel && (
-                  <span
-                    className={`text-[9px] font-semibold px-1 rounded ${
-                      isSelected
-                        ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-800'
-                        : 'bg-neutral-200/80 text-neutral-600 dark:bg-neutral-700/60 dark:text-neutral-300'
-                    }`}
-                  >
-                    TH{item.townHallLevel}
-                  </span>
-                )}
+                <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-neutral-200/70 dark:bg-neutral-800">
+                  {item.townHallLevel ? <TownHallImage level={item.townHallLevel} size="sm" /> : <span className="text-lg text-neutral-400">♟</span>}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-neutral-800 dark:text-neutral-100">{item.name || item.tag}</span>
+                  {item.clanName ? <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">⚔️ {item.clanName}{role ? <><span className="px-1">|</span>{role}</> : null}</span> : <span className="mt-0.5 block truncate font-mono text-[10px] text-neutral-400">{item.tag}</span>}
+                </span>
               </button>
+
+              <span className="flex min-w-[70px] shrink-0 items-center justify-between gap-2 rounded-md bg-neutral-200/70 px-2.5 py-2 text-xs font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200" title="Trophies">
+                <svg className="h-4 w-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 3h3v3a5 5 0 0 1-4.3 4.95A6 6 0 0 1 13 14.9V18h4v3H7v-3h4v-3.1a6 6 0 0 1-3.7-3.95A5 5 0 0 1 3 6V3h3V1h12v2ZM6 5H5v1a3 3 0 0 0 2.1 2.86A8 8 0 0 1 6 5Zm13 0a8 8 0 0 1-1.1 3.86A3 3 0 0 0 20 6V5h-1Z" /></svg>
+                {item.trophies ?? '—'}
+              </span>
 
               <button
                 type="button"
@@ -288,11 +276,7 @@ export default function SavedPlayers({
                   onRemovePlayer && onRemovePlayer(item.tag);
                 }}
                 aria-label={`Remove ${item.name || item.tag} from saved`}
-                className={`w-4 h-4 flex items-center justify-center rounded-full text-xs transition-colors cursor-pointer ${
-                  isSelected
-                    ? 'text-neutral-400 hover:text-white dark:hover:text-neutral-900'
-                    : 'text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                }`}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-base text-neutral-400 opacity-50 transition hover:bg-neutral-200 hover:text-neutral-800 focus:opacity-100 group-hover:opacity-100 sm:opacity-0 dark:hover:bg-neutral-700 dark:hover:text-white"
                 title="Remove from saved"
               >
                 ×
@@ -300,6 +284,7 @@ export default function SavedPlayers({
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
