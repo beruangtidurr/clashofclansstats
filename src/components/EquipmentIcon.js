@@ -16,7 +16,9 @@ export default function EquipmentIcon({ name, level = 1, maxLevel }) {
   if (!name) return null;
 
   const formattedName = name.toLowerCase().replace(/\s+/g, '_');
-  const imageUrl = `https://assets.clashk.ing/equipment/${formattedName}.webp`;
+  const imageUrl = name === 'Portal Pendant'
+    ? 'https://www.clash.ninja/images/entities/296.png'
+    : `https://assets.clashk.ing/equipment/${formattedName}.webp`;
 
   const isEpic = maxLevel > 18;
   const isMax = Boolean(maxLevel && level >= maxLevel);
@@ -27,39 +29,33 @@ export default function EquipmentIcon({ name, level = 1, maxLevel }) {
       title={`${name} (Lv. ${level}${maxLevel ? ` / ${maxLevel}` : ''})`}
     >
       <div
-        className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800/80 border transition-all select-none shadow-xs flex items-center justify-center p-0.5 ${
+        className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg overflow-hidden border transition-all select-none shadow-xs flex items-center justify-center ${
+          isEpic ? 'bg-[#8f409e]' : 'bg-[#3c8bcc]'
+        } ${
           isMax
-            ? 'border-amber-400/60 dark:border-amber-500/50 hover:border-amber-500 dark:hover:border-amber-400'
-            : isEpic
-            ? 'border-purple-400/50 dark:border-purple-500/40 hover:border-purple-500 dark:hover:border-purple-400'
-            : 'border-neutral-200/60 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700'
+            ? 'border-2 border-[#ffd54f] dark:border-[#ffd54f] hover:border-[#ffd54f] dark:hover:border-[#ffd54f]'
+            : 'border-2 border-neutral-400 dark:border-neutral-500 hover:border-neutral-500 dark:hover:border-neutral-400'
         }`}
       >
         {!imageError && imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={name}
-            fill
-            sizes="(max-width: 640px) 40px, 44px"
-            className="object-contain p-0.5 group-hover:scale-105 transition-transform duration-200"
-            onError={() => setImageError(true)}
-          />
+          <div className="relative h-6 w-6 sm:h-7 sm:w-7 transition-transform duration-200 group-hover:scale-105">
+            <Image
+              src={imageUrl}
+              alt={name}
+              fill
+              sizes="28px"
+              className="object-contain"
+              onError={() => setImageError(true)}
+            />
+          </div>
         ) : (
-          <span className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase select-none">
+          <span className="text-xs font-bold text-neutral-600 dark:text-neutral-200 uppercase select-none">
             {name.slice(0, 2)}
           </span>
         )}
 
-        {/* Epic/Common dot indicator */}
-        <span
-          className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full z-10 ${
-            isEpic ? 'bg-purple-500 shadow-xs shadow-purple-500/60' : 'bg-blue-400'
-          }`}
-          title={isEpic ? 'Epic Equipment' : 'Common Equipment'}
-        />
-
         {/* Level badge inside image left corner */}
-        <div className="absolute bottom-0.5 left-0.5 px-1 py-0.5 rounded bg-black/75 dark:bg-black/85 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-mono font-bold leading-none shadow-sm flex items-center gap-0.5 pointer-events-none transition-all z-10">
+        <div className="absolute bottom-0.5 left-0.5 px-0.5 py-px rounded bg-black/75 dark:bg-black/85 backdrop-blur-xs text-white text-[7px] sm:text-[8px] font-mono font-bold leading-none shadow-sm flex items-center gap-0.5 pointer-events-none transition-all z-10">
           <span>{level}</span>
           {maxLevel && (
             <span className="hidden group-hover:inline text-neutral-300 dark:text-neutral-400 font-normal">

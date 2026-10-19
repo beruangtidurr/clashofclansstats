@@ -10,6 +10,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'assets.clashk.ing',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.clash.ninja',
+        pathname: '/images/entities/**',
+      },
     ],
   },
 };
