@@ -5,20 +5,35 @@ import { useState, useMemo } from 'react';
 import TroopIcon from './TroopIcon';
 
 const PET_ROSTER = [
-  { name: 'L.A.S.S.I', maxLevel: 15 },
-  { name: 'Mighty Yak', maxLevel: 15 },
-  { name: 'Electro Owl', maxLevel: 15 },
-  { name: 'Unicorn', maxLevel: 15 },
-  { name: 'Phoenix', maxLevel: 10 },
-  { name: 'Poison Lizard', maxLevel: 15 },
-  { name: 'Diggy', maxLevel: 15 },
-  { name: 'Frosty', maxLevel: 15 },
-  { name: 'Spirit Fox', maxLevel: 10 },
-  { name: 'Angry Jelly', maxLevel: 10 },
-  { name: 'Sneezy', maxLevel: 10 },
-  { name: 'Greedy Raven', maxLevel: 10 },
+  { name: 'L.A.S.S.I', maxLevel: 15, unlockTownHall: 14 },
+  { name: 'Electro Owl', maxLevel: 15, unlockTownHall: 14 },
+  { name: 'Mighty Yak', maxLevel: 15, unlockTownHall: 14 },
+  { name: 'Unicorn', maxLevel: 15, unlockTownHall: 14 },
+  { name: 'Frosty', maxLevel: 15, unlockTownHall: 15 },
+  { name: 'Diggy', maxLevel: 15, unlockTownHall: 15 },
+  { name: 'Poison Lizard', maxLevel: 15, unlockTownHall: 15 },
+  { name: 'Phoenix', maxLevel: 10, unlockTownHall: 15 },
+  { name: 'Spirit Fox', maxLevel: 10, unlockTownHall: 16 },
+  { name: 'Angry Jelly', maxLevel: 10, unlockTownHall: 16 },
+  { name: 'Sneezy', maxLevel: 10, unlockTownHall: 17 },
+  { name: 'Greedy Raven', maxLevel: 10, unlockTownHall: 18 },
 ];
 const PET_NAMES = new Set(PET_ROSTER.map((pet) => pet.name));
+
+const TROOP_ROSTER = [
+  'Barbarian', 'Archer', 'Goblin', 'Giant', 'Wall Breaker', 'Balloon', 'Wizard', 'Healer',
+  'Dragon', 'P.E.K.K.A', 'Baby Dragon', 'Miner', 'Electro Dragon', 'Yeti', 'Dragon Rider',
+  'Electro Titan', 'Root Rider', 'Druid', 'Thrower', 'Ruin Witch', 'Meteor Golem',
+  'Minion', 'Hog Rider', 'Valkyrie', 'Golem', 'Witch', 'Lava Hound', 'Bowler', 'Ice Golem',
+  'Headhunter', 'Apprentice Warden', 'Furnace',
+];
+
+const SPELL_ROSTER = [
+  'Lightning Spell', 'Healing Spell', 'Rage Spell', 'Jump Spell', 'Freeze Spell', 'Clone Spell',
+  'Invisibility Spell', 'Recall Spell', 'Overgrowth Spell', 'Revive Spell', 'Earthquake Spell',
+  'Poison Spell', 'Haste Spell', 'Skeleton Spell', 'Bat Spell', 'Angry Spell',
+  'Ice Block Spell', 'Totem Spell',
+];
 
 const SIEGE_NAMES = new Set([
   'Wall Wrecker',
@@ -29,15 +44,10 @@ const SIEGE_NAMES = new Set([
   'Flame Flinger',
   'Battle Drill',
   'Troop Launcher',
-  'Furnace',
-  'Meteor Golem',
   'Sky Wagon',
 ]);
 
-export default function TroopLevels({ troops = [], spells = [] }) {
-  const [activeCategory, setActiveCategory] = useState('troops');
-  const [showMaxedOnly, setShowMaxedOnly] = useState(false);
-
+export default function TroopLevels({ troops = [], spells = [], townHallLevel = 0 }) {
   // Group troops & spells by categories
   const categories = useMemo(() => {
     const homeTroops = (troops || []).filter(
@@ -78,53 +88,46 @@ export default function TroopLevels({ troops = [], spells = [] }) {
       itemType: 'spell',
     }));
 
+    const withLockedEntries = (items, roster, itemType) => {
+      const present = new Set(items.map((item) => item.name));
+      return [
+        ...items,
+        ...roster
+          .filter((name) => !present.has(name))
+          .map((name) => ({ name, level: 0, itemType, isLocked: true })),
+      ];
+    };
+
     const petsByName = new Map(pets.map((pet) => [pet.name, pet]));
-    const completePetRoster = PET_ROSTER.map(({ name, maxLevel }) => {
+    const completePetRoster = PET_ROSTER.map(({ name, maxLevel, unlockTownHall }, order) => {
       const pet = petsByName.get(name);
       return pet
-        ? { ...pet, maxLevel: pet.maxLevel || maxLevel, unlocked: Number(pet.level) > 0 }
-        : { name, level: 0, maxLevel, itemType: 'pet', unlocked: false };
+        ? { ...pet, maxLevel: pet.maxLevel || maxLevel, unlockTownHall, unlocked: Number(pet.level) > 0, order }
+        : { name, level: 0, maxLevel, unlockTownHall, itemType: 'pet', unlocked: false, order };
+    }).sort((a, b) => {
+      const aAvailable = townHallLevel >= a.unlockTownHall;
+      const bAvailable = townHallLevel >= b.unlockTownHall;
+      if (aAvailable !== bAvailable) return aAvailable ? -1 : 1;
+      return a.order - b.order;
     });
 
     return {
-      troops: regularTroops,
-      spells: spellList,
-      siege: siegeMachines,
+      troops: withLockedEntries(regularTroops, TROOP_ROSTER, 'troop'),
+      spells: withLockedEntries(spellList, SPELL_ROSTER, 'spell'),
+      siege: withLockedEntries(siegeMachines, [...SIEGE_NAMES], 'siege'),
       pets: completePetRoster,
       super: superTroops,
       builder: builderTroops.map((t) => ({ ...t, itemType: 'builder' })),
     };
   }, [troops, spells]);
 
-  // Available tabs that actually contain items
-  const tabs = useMemo(() => {
-    const list = [];
-    if (categories.troops.length > 0) list.push({ id: 'troops', label: 'Troops', items: categories.troops });
-    if (categories.spells.length > 0) list.push({ id: 'spells', label: 'Spells', items: categories.spells });
-    if (categories.siege.length > 0) list.push({ id: 'siege', label: 'Siege', items: categories.siege });
-    if (categories.super.length > 0) list.push({ id: 'super', label: 'Super', items: categories.super });
-    if (categories.builder.length > 0) list.push({ id: 'builder', label: 'Builder Base', items: categories.builder });
-    return list;
-  }, [categories]);
+  const sections = [
+    { id: 'troops', label: 'Troops', items: categories.troops },
+    { id: 'spells', label: 'Spells', items: categories.spells },
+    { id: 'siege', label: 'Siege Machines', items: categories.siege },
+  ].filter((section) => section.items.length > 0);
 
-  // Current category items
-  const currentTab = tabs.find((t) => t.id === activeCategory) || tabs[0];
-  const currentItems = useMemo(() => {
-    return currentTab?.items || [];
-  }, [currentTab]);
-
-  // Filtered by maxed toggle
-  const displayedItems = useMemo(() => {
-    if (!showMaxedOnly) return currentItems;
-    return currentItems.filter((item) => item.maxLevel && item.level >= item.maxLevel);
-  }, [currentItems, showMaxedOnly]);
-
-  // Maxed count for active category
-  const maxedCount = useMemo(() => {
-    return currentItems.filter((item) => item.maxLevel && item.level >= item.maxLevel).length;
-  }, [currentItems]);
-
-  if (tabs.length === 0 && categories.pets.length === 0) {
+  if (sections.length === 0 && categories.pets.length === 0) {
     return null;
   }
 
@@ -147,84 +150,34 @@ export default function TroopLevels({ troops = [], spells = [] }) {
         </section>
       )}
 
-      {/* Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-            Troop Levels
-          </div>
-          {currentItems.length > 0 && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
-              {maxedCount}/{currentItems.length} Maxed
-            </span>
-          )}
-        </div>
+      <div className="space-y-4">
+        {sections.map((section) => {
+          const items = section.items;
 
-        {/* Maxed Filter Toggle */}
-        <button
-          type="button"
-          onClick={() => setShowMaxedOnly((prev) => !prev)}
-          className={`self-start sm:self-auto text-xs px-2.5 py-1 rounded-lg transition-colors cursor-pointer border ${
-            showMaxedOnly
-              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 font-medium'
-              : 'bg-transparent text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 border-neutral-200 dark:border-neutral-800'
-          }`}
-        >
-          {showMaxedOnly ? 'Showing Maxed Only' : 'Show Maxed Only'}
-        </button>
-      </div>
-
-      {/* Category Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 mb-3 scrollbar-none">
-        {tabs.map((tab) => {
-          const isSelected = (currentTab?.id || activeCategory) === tab.id;
           return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveCategory(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                isSelected
-                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 shadow-xs'
-                  : 'bg-neutral-100/70 hover:bg-neutral-200/70 dark:bg-neutral-800/50 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                  isSelected
-                    ? 'bg-neutral-800 text-neutral-200 dark:bg-neutral-200 dark:text-neutral-800'
-                    : 'bg-neutral-200/60 dark:bg-neutral-700/60 text-neutral-500 dark:text-neutral-400'
-                }`}
-              >
-                {tab.items.length}
-              </span>
-            </button>
+            <section key={section.id}>
+              <div className="mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                  {section.label}
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:gap-2.5">
+                {items.map((item) => (
+                  <TroopIcon
+                    key={`${item.itemType}-${item.name}`}
+                    name={item.name}
+                    level={item.level}
+                    maxLevel={item.maxLevel}
+                    type={item.itemType}
+                    isActiveSuperTroop={item.isActiveSuperTroop}
+                    isLocked={item.isLocked}
+                  />
+                ))}
+              </div>
+            </section>
           );
         })}
       </div>
-
-      {/* Troops Grid */}
-      {displayedItems.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {displayedItems.map((item) => (
-            <TroopIcon
-              key={`${item.itemType}-${item.name}`}
-              name={item.name}
-              level={item.level}
-              maxLevel={item.maxLevel}
-              type={item.itemType}
-              isActiveSuperTroop={item.isActiveSuperTroop}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/30 border border-neutral-200/50 dark:border-neutral-800/50 text-center text-xs text-neutral-400">
-          {showMaxedOnly
-            ? 'No maxed units in this category yet.'
-            : 'No units available in this category.'}
-        </div>
-      )}
     </div>
   );
 }

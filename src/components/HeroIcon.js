@@ -27,7 +27,7 @@ export default function HeroIcon({ name, level = 1, maxLevel }) {
       <div
         className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800/80 border transition-all select-none shadow-xs flex items-center justify-center ${
           isMax
-           ? 'border-2 border-[#ffd54f] dark:border-[#ffd54f] hover:border-[#ffd54f] dark:hover:border-[#ffd54f]'
+            ? 'border-2 border-amber-400 dark:border-amber-500 hover:border-amber-400 dark:hover:border-amber-500'
             : 'border-2 border-neutral-400 dark:border-neutral-500 hover:border-neutral-500 dark:hover:border-neutral-400'
         }`}
       >

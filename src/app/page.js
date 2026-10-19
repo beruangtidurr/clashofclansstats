@@ -386,7 +386,11 @@ function HomeContent() {
             </div>
 
             {/* Troop Levels */}
-            <TroopLevels troops={player.troops} spells={player.spells} />
+            <TroopLevels
+              troops={player.troops}
+              spells={player.spells}
+              townHallLevel={player.townHallLevel}
+            />
           </div>
 
           {/* History Navigation Tabs */}

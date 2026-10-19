@@ -33,7 +33,7 @@ export default function EquipmentIcon({ name, level = 1, maxLevel }) {
           isEpic ? 'bg-[#8f409e]' : 'bg-[#3c8bcc]'
         } ${
           isMax
-            ? 'border-2 border-[#ffd54f] dark:border-[#ffd54f] hover:border-[#ffd54f] dark:hover:border-[#ffd54f]'
+            ? 'border-2 border-amber-400 dark:border-amber-500 hover:border-amber-400 dark:hover:border-amber-500'
             : 'border-2 border-neutral-400 dark:border-neutral-500 hover:border-neutral-500 dark:hover:border-neutral-400'
         }`}
       >
