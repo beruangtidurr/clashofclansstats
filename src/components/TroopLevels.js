@@ -4,20 +4,21 @@
 import { useState, useMemo } from 'react';
 import TroopIcon from './TroopIcon';
 
-const PET_NAMES = new Set([
-  'L.A.S.S.I',
-  'Mighty Yak',
-  'Electro Owl',
-  'Unicorn',
-  'Phoenix',
-  'Poison Lizard',
-  'Diggy',
-  'Frosty',
-  'Spirit Fox',
-  'Angry Jelly',
-  'Sneezy',
-  'Greedy Raven',
-]);
+const PET_ROSTER = [
+  { name: 'L.A.S.S.I', maxLevel: 15 },
+  { name: 'Mighty Yak', maxLevel: 15 },
+  { name: 'Electro Owl', maxLevel: 15 },
+  { name: 'Unicorn', maxLevel: 15 },
+  { name: 'Phoenix', maxLevel: 10 },
+  { name: 'Poison Lizard', maxLevel: 15 },
+  { name: 'Diggy', maxLevel: 15 },
+  { name: 'Frosty', maxLevel: 15 },
+  { name: 'Spirit Fox', maxLevel: 10 },
+  { name: 'Angry Jelly', maxLevel: 10 },
+  { name: 'Sneezy', maxLevel: 10 },
+  { name: 'Greedy Raven', maxLevel: 10 },
+];
+const PET_NAMES = new Set(PET_ROSTER.map((pet) => pet.name));
 
 const SIEGE_NAMES = new Set([
   'Wall Wrecker',
@@ -77,11 +78,19 @@ export default function TroopLevels({ troops = [], spells = [] }) {
       itemType: 'spell',
     }));
 
+    const petsByName = new Map(pets.map((pet) => [pet.name, pet]));
+    const completePetRoster = PET_ROSTER.map(({ name, maxLevel }) => {
+      const pet = petsByName.get(name);
+      return pet
+        ? { ...pet, maxLevel: pet.maxLevel || maxLevel, unlocked: Number(pet.level) > 0 }
+        : { name, level: 0, maxLevel, itemType: 'pet', unlocked: false };
+    });
+
     return {
       troops: regularTroops,
       spells: spellList,
       siege: siegeMachines,
-      pets,
+      pets: completePetRoster,
       super: superTroops,
       builder: builderTroops.map((t) => ({ ...t, itemType: 'builder' })),
     };
@@ -93,7 +102,6 @@ export default function TroopLevels({ troops = [], spells = [] }) {
     if (categories.troops.length > 0) list.push({ id: 'troops', label: 'Troops', items: categories.troops });
     if (categories.spells.length > 0) list.push({ id: 'spells', label: 'Spells', items: categories.spells });
     if (categories.siege.length > 0) list.push({ id: 'siege', label: 'Siege', items: categories.siege });
-    if (categories.pets.length > 0) list.push({ id: 'pets', label: 'Pets', items: categories.pets });
     if (categories.super.length > 0) list.push({ id: 'super', label: 'Super', items: categories.super });
     if (categories.builder.length > 0) list.push({ id: 'builder', label: 'Builder Base', items: categories.builder });
     return list;
@@ -116,12 +124,29 @@ export default function TroopLevels({ troops = [], spells = [] }) {
     return currentItems.filter((item) => item.maxLevel && item.level >= item.maxLevel).length;
   }, [currentItems]);
 
-  if (tabs.length === 0) {
+  if (tabs.length === 0 && categories.pets.length === 0) {
     return null;
   }
 
   return (
     <div className="mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-800/80">
+      {categories.pets.length > 0 && (
+        <section className="mb-4">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Pets</h3>
+          <div className="flex flex-wrap gap-2 sm:gap-2.5">
+            {categories.pets.map((pet) => (
+              <TroopIcon
+                key={`pet-${pet.name}`}
+                name={pet.name}
+                level={pet.level}
+                maxLevel={pet.maxLevel}
+                type="pet"
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
         <div className="flex items-center gap-2">
