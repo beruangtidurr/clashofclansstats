@@ -49,7 +49,7 @@ export default function HeroIcon({ name, level = 1, maxLevel }) {
         )}
 
         {/* Level badge inside image left corner */}
-        <div className="absolute bottom-0.5 left-0.5 px-0.5 py-px rounded bg-black/75 dark:bg-black/85 backdrop-blur-xs text-white text-[7px] sm:text-[8px] font-mono font-bold leading-none shadow-sm flex items-center gap-0.5 pointer-events-none transition-all z-10">
+        <div className="absolute bottom-0.5 left-0.5 px-0.5 py-px rounded bg-black/75 dark:bg-black/85 backdrop-blur-xs text-white text-[7px] sm:text-[8px] font-sans font-bold leading-none shadow-sm flex items-center gap-0.5 pointer-events-none transition-all z-10">
           <span>{level}</span>
           {maxLevel && (
             <span className="hidden group-hover:inline text-neutral-300 dark:text-neutral-400 font-normal">
@@ -67,7 +67,7 @@ export default function HeroIcon({ name, level = 1, maxLevel }) {
       {/* Hover Tooltip */}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs text-white shadow-md dark:bg-neutral-800 z-30 pointer-events-none">
         <span className="font-semibold">{name}</span>
-        <span className="text-[11px] text-neutral-300 dark:text-neutral-400 font-mono">
+        <span className="text-[11px] text-neutral-300 dark:text-neutral-400 font-sans">
           Lv. {level}{maxLevel ? ` (Max ${maxLevel})` : ''}{isMax ? ' · MAX' : ''}
         </span>
         <div className="w-1.5 h-1.5 -mb-1 bg-neutral-900 dark:bg-neutral-800 rotate-45" />

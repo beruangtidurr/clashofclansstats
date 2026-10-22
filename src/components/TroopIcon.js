@@ -55,12 +55,12 @@ export default function TroopIcon({
         ) : (
           <span className={`text-[10px] font-bold uppercase ${isLockedUnit ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-600 dark:text-neutral-200'}`}>{name.slice(0, 2)}</span>
         )}
-        <span className={`absolute bottom-0.5 left-0.5 rounded px-0.5 py-px font-mono text-[7px] font-bold leading-none sm:text-[8px] ${isLockedUnit ? 'bg-neutral-500/80 text-neutral-100' : 'bg-black/75 text-white'}`}>{isLockedUnit ? '—' : level}</span>
+        <span className={`absolute bottom-0.5 left-0.5 rounded px-0.5 py-px font-sans text-[7px] font-bold leading-none sm:text-[8px] ${isLockedUnit ? 'bg-neutral-500/80 text-neutral-100' : 'bg-black/75 text-white'}`}>{isLockedUnit ? '—' : level}</span>
         {isActiveSuperTroop && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-1 ring-black/40" title="Active super troop" />}
       </div>
       <div className="absolute bottom-full left-1/2 z-30 mb-1.5 hidden -translate-x-1/2 flex-col items-center whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs text-white shadow-md group-hover:flex dark:bg-neutral-800">
         <span className="font-semibold">{name}</span>
-        <span className="font-mono text-[11px] text-neutral-300 dark:text-neutral-400">{isLockedUnit ? 'Locked' : `Lv. ${level}${maxLevel ? ` (Max ${maxLevel})` : ''}${isMax ? ' · MAX' : ''}${isActiveSuperTroop ? ' · ACTIVE' : ''}`}</span>
+        <span className="font-sans text-[11px] text-neutral-300 dark:text-neutral-400">{isLockedUnit ? 'Locked' : `Lv. ${level}${maxLevel ? ` (Max ${maxLevel})` : ''}${isMax ? ' · MAX' : ''}${isActiveSuperTroop ? ' · ACTIVE' : ''}`}</span>
         <span className="-mb-1 h-1.5 w-1.5 rotate-45 bg-neutral-900 dark:bg-neutral-800" />
       </div>
     </div>

@@ -228,7 +228,7 @@ export default function CwlHistory({ cwl, loading, error }) {
                       {season.clan?.wars && (
                         <>
                           <span className="text-neutral-300 dark:text-neutral-700">•</span>
-                          <span className="font-mono text-[11px]">
+                          <span className="font-sans text-[11px]">
                             {season.clan.wars.won}W-{season.clan.wars.lost}L{season.clan.wars.tied > 0 ? `-${season.clan.wars.tied}T` : ''}
                           </span>
                         </>
@@ -240,7 +240,7 @@ export default function CwlHistory({ cwl, loading, error }) {
                 {/* Season Performance & Chevron */}
                 <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                   <div className="text-right">
-                    <div className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 font-mono">
+                    <div className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 font-sans">
                       <span>{seasonStars}</span>
                       <span className="text-neutral-400 text-[11px]">/{maxStars} ★</span>
                     </div>
@@ -308,7 +308,7 @@ export default function CwlHistory({ cwl, loading, error }) {
                             </div>
 
                             {attack.duration !== undefined && (
-                              <span className="text-[11px] font-mono text-neutral-400">
+                              <span className="text-[11px] font-sans text-neutral-400">
                                 {formatDuration(attack.duration)}
                               </span>
                             )}
@@ -320,7 +320,7 @@ export default function CwlHistory({ cwl, loading, error }) {
                                 <ShieldIcon />
                                 <span>{attack.defender.name}</span>
                                 {attack.defender.mapPosition && (
-                                  <span className="text-neutral-400 font-mono text-[10px]">
+                                  <span className="text-neutral-400 font-sans text-[10px]">
                                     (#{attack.defender.mapPosition})
                                   </span>
                                 )}
@@ -354,7 +354,7 @@ export default function CwlHistory({ cwl, loading, error }) {
                                 })}
                               </div>
 
-                              <span className="text-xs font-bold font-mono text-neutral-900 dark:text-neutral-100">
+                              <span className="text-xs font-bold font-sans text-neutral-900 dark:text-neutral-100">
                                 {destruction}%
                               </span>
                             </div>

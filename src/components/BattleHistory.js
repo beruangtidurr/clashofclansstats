@@ -273,7 +273,7 @@ export default function BattleHistory({ battles, loading, error }) {
             <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
               Total Loot
             </div>
-            <div className="text-xs font-semibold mt-1 text-neutral-600 dark:text-neutral-300 flex items-center justify-center gap-1.5 font-mono">
+            <div className="text-xs font-semibold mt-1 text-neutral-600 dark:text-neutral-300 flex items-center justify-center gap-1.5 font-sans">
               <span className="text-amber-600 dark:text-amber-400">{formatCompact(stats.totalGold)}</span>
               <span className="text-neutral-300 dark:text-neutral-600">/</span>
               <span className="text-pink-600 dark:text-pink-400">{formatCompact(stats.totalElixir)}</span>
@@ -314,7 +314,7 @@ export default function BattleHistory({ battles, loading, error }) {
                 </div>
 
                 {battle.duration !== undefined && (
-                  <span className="font-mono text-[11px] text-neutral-400">
+                  <span className="font-sans text-[11px] text-neutral-400">
                     {formatDuration(battle.duration)}
                   </span>
                 )}
@@ -340,13 +340,13 @@ export default function BattleHistory({ battles, loading, error }) {
                       </svg>
                     );
                   })}
-                  <span className="text-xs font-mono font-medium ml-1.5 text-neutral-500 dark:text-neutral-400">
+                  <span className="text-xs font-sans font-medium ml-1.5 text-neutral-500 dark:text-neutral-400">
                     {stars}/3
                   </span>
                 </div>
 
                 {/* Destruction % */}
-                <div className="text-base font-bold font-mono text-neutral-900 dark:text-neutral-100">
+                <div className="text-base font-bold font-sans text-neutral-900 dark:text-neutral-100">
                   {destruction}%
                 </div>
               </div>
@@ -369,7 +369,7 @@ export default function BattleHistory({ battles, loading, error }) {
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs">
                 {/* Loot */}
                 {battle.lootedResources ? (
-                  <div className="flex items-center gap-3 font-mono text-[11px]">
+                  <div className="flex items-center gap-3 font-sans text-[11px]">
                     <div className="flex items-center gap-1 font-medium text-neutral-700 dark:text-neutral-300" title={`Gold: ${formatNumber(battle.lootedResources.gold)}`}>
                       <GoldIcon />
                       <span>{formatCompact(battle.lootedResources.gold)}</span>

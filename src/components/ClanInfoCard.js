@@ -74,7 +74,7 @@ export default function ClanInfoCard({ clan }) {
               <button
                 type="button"
                 onClick={handleCopyTag}
-                className="inline-flex items-center gap-1 font-mono text-xs text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 font-sans text-xs text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors cursor-pointer"
                 title="Click to copy clan tag"
               >
                 <span>{clan.tag}</span>
@@ -115,7 +115,7 @@ export default function ClanInfoCard({ clan }) {
           <div className="text-xs text-neutral-400 font-medium">
             Clan Points
           </div>
-          <div className="flex items-center gap-1.5 font-mono text-lg sm:text-xl font-bold text-neutral-900 dark:text-neutral-100">
+          <div className="flex items-center gap-1.5 font-sans text-lg sm:text-xl font-bold text-neutral-900 dark:text-neutral-100">
             <Image
               src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png"
               width={22}
@@ -166,7 +166,7 @@ export default function ClanInfoCard({ clan }) {
           <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
             Members
           </div>
-          <div className="text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-neutral-100 mt-0.5">
+          <div className="text-base sm:text-lg font-bold font-sans text-neutral-900 dark:text-neutral-100 mt-0.5">
             {clan.members} / 50
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function ClanInfoCard({ clan }) {
           <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
             War Record
           </div>
-          <div className="text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-neutral-100 mt-0.5">
+          <div className="text-base sm:text-lg font-bold font-sans text-neutral-900 dark:text-neutral-100 mt-0.5">
             {clan.warWins}W
             {clan.warLosses !== undefined ? ` - ${clan.warLosses}L` : ''}
           </div>
@@ -199,7 +199,7 @@ export default function ClanInfoCard({ clan }) {
           <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
             Required TH
           </div>
-          <div className="text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-neutral-100 mt-0.5">
+          <div className="text-base sm:text-lg font-bold font-sans text-neutral-900 dark:text-neutral-100 mt-0.5">
             TH {clan.requiredTownhallLevel || 1}+
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function ClanInfoCard({ clan }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-2.5 text-xs text-neutral-500 dark:text-neutral-400">
         <div className="p-2 rounded-lg bg-neutral-50/50 dark:bg-neutral-800/20 border border-neutral-200/40 dark:border-neutral-800/40 flex items-center justify-between">
           <span>Builder Base:</span>
-          <span className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">
+          <span className="font-sans font-semibold text-neutral-800 dark:text-neutral-200">
             {clan.clanBuilderBasePoints?.toLocaleString() || 0} 🏆
           </span>
         </div>
@@ -224,7 +224,7 @@ export default function ClanInfoCard({ clan }) {
         {clan.clanCapital?.capitalHallLevel ? (
           <div className="p-2 rounded-lg bg-neutral-50/50 dark:bg-neutral-800/20 border border-neutral-200/40 dark:border-neutral-800/40 flex items-center justify-between">
             <span>Capital Hall:</span>
-            <span className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">
+            <span className="font-sans font-semibold text-neutral-800 dark:text-neutral-200">
               Lv. {clan.clanCapital.capitalHallLevel}
             </span>
           </div>
@@ -239,7 +239,7 @@ export default function ClanInfoCard({ clan }) {
 
         <div className="p-2 rounded-lg bg-neutral-50/50 dark:bg-neutral-800/20 border border-neutral-200/40 dark:border-neutral-800/40 flex items-center justify-between">
           <span>Req. Trophies:</span>
-          <span className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">
+          <span className="font-sans font-semibold text-neutral-800 dark:text-neutral-200">
             {clan.requiredTrophies?.toLocaleString() || 0} 🏆
           </span>
         </div>

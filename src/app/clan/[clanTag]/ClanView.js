@@ -104,7 +104,7 @@ export default function ClanView({
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
           Clan Details & Members
         </h1>
-        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 font-mono">
+        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 font-sans">
           {cleanDisplayTag}
         </p>
       </div>
@@ -122,7 +122,7 @@ export default function ClanView({
             placeholder="Search another clan tag (e.g. #2J8Q9YCGV)"
             value={searchTag}
             onChange={(e) => setSearchTag(e.target.value)}
-            className="w-full bg-transparent px-1 py-1 text-sm font-mono uppercase text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans focus:outline-none"
+            className="w-full bg-transparent px-1 py-1 text-sm font-sans uppercase text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans focus:outline-none"
           />
           <button
             type="submit"

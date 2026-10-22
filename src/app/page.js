@@ -156,7 +156,7 @@ function HomeContent() {
             placeholder="Enter player tag (e.g. #2ABC)"
             value={tag}
             onChange={(e) => setTag(e.target.value)}
-            className="w-full bg-transparent px-1 py-1 text-sm font-mono uppercase text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans focus:outline-none"
+            className="w-full bg-transparent px-1 py-1 text-sm font-sans uppercase text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans focus:outline-none"
           />
 
           {tag.trim() && (
@@ -280,7 +280,7 @@ function HomeContent() {
                     <button
                       type="button"
                       onClick={() => handleCopyTag(player.tag)}
-                      className="inline-flex items-center gap-1 font-mono text-xs text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 font-sans text-xs text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors cursor-pointer"
                       title="Click to copy tag"
                     >
                       <span>{player.tag}</span>
@@ -316,7 +316,7 @@ function HomeContent() {
               {/* Trophies & League Block */}
               <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-neutral-100 dark:border-neutral-800/80">
                 <LeagueBadge leagueTier={player.leagueTier || player.league} />
-                <div className="flex items-center gap-1.5 font-mono text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100">
+                <div className="flex items-center gap-1.5 font-sans text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100">
                   <Image
                     src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png"
                     width={20}
@@ -335,7 +335,7 @@ function HomeContent() {
                 <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
                   Town Hall
                 </div>
-                <div className="text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-neutral-100 mt-0.5">
+                <div className="text-base sm:text-lg font-bold font-sans text-neutral-900 dark:text-neutral-100 mt-0.5">
                   TH {player.townHallLevel}
                 </div>
               </div>
@@ -343,7 +343,7 @@ function HomeContent() {
                 <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
                   Best Trophies
                 </div>
-                <div className="text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-neutral-100 mt-0.5">
+                <div className="text-base sm:text-lg font-bold font-sans text-neutral-900 dark:text-neutral-100 mt-0.5">
                   {player.bestTrophies}
                 </div>
               </div>
@@ -351,7 +351,7 @@ function HomeContent() {
                 <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
                   War Stars
                 </div>
-                <div className="text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-neutral-100 mt-0.5">
+                <div className="text-base sm:text-lg font-bold font-sans text-neutral-900 dark:text-neutral-100 mt-0.5">
                   {player.warStars} ★
                 </div>
               </div>
@@ -359,7 +359,7 @@ function HomeContent() {
                 <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
                   Exp Level
                 </div>
-                <div className="text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-neutral-100 mt-0.5">
+                <div className="text-base sm:text-lg font-bold font-sans text-neutral-900 dark:text-neutral-100 mt-0.5">
                   Lv. {player.expLevel}
                 </div>
               </div>

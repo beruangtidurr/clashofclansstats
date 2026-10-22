@@ -122,7 +122,7 @@ export default function ClanMemberList({ members = [] }) {
           <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100">
             Clan Members
           </h3>
-          <span className="text-xs px-2 py-0.5 rounded-full font-mono font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
+          <span className="text-xs px-2 py-0.5 rounded-full font-sans font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
             {filteredAndSortedMembers.length}
             {filteredAndSortedMembers.length !== members.length ? ` / ${members.length}` : ''}
           </span>
@@ -131,13 +131,13 @@ export default function ClanMemberList({ members = [] }) {
         {aggregateStats && (
           <div className="flex items-center gap-2 text-[11px] text-neutral-500 dark:text-neutral-400">
             <span className="px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">
-              Avg 🏆 <strong className="font-mono text-neutral-700 dark:text-neutral-300">{aggregateStats.avgTrophies}</strong>
+              Avg 🏆 <strong className="font-sans text-neutral-700 dark:text-neutral-300">{aggregateStats.avgTrophies}</strong>
             </span>
             <span className="px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">
-              Avg TH <strong className="font-mono text-neutral-700 dark:text-neutral-300">{aggregateStats.avgTownHall}</strong>
+              Avg TH <strong className="font-sans text-neutral-700 dark:text-neutral-300">{aggregateStats.avgTownHall}</strong>
             </span>
             <span className="px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 hidden sm:inline-block">
-              Total Donated <strong className="font-mono text-neutral-700 dark:text-neutral-300">{aggregateStats.totalDonations.toLocaleString()}</strong>
+              Total Donated <strong className="font-sans text-neutral-700 dark:text-neutral-300">{aggregateStats.totalDonations.toLocaleString()}</strong>
             </span>
           </div>
         )}
@@ -265,7 +265,7 @@ export default function ClanMemberList({ members = [] }) {
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Rank & Change Badge */}
                   <div className="flex flex-col items-center justify-center w-8 shrink-0 text-center">
-                    <span className="font-mono text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200">
+                    <span className="font-sans text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200">
                       #{member.clanRank}
                     </span>
                     {rankDiff !== null ? (
@@ -306,7 +306,7 @@ export default function ClanMemberList({ members = [] }) {
                     </div>
 
                     <div className="flex items-center gap-2 mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-                      <span className="font-mono text-[11px]">{member.tag}</span>
+                      <span className="font-sans text-[11px]">{member.tag}</span>
                       <span>•</span>
                       <span className="text-[11px]">Lv. {member.expLevel}</span>
                     </div>
@@ -316,7 +316,7 @@ export default function ClanMemberList({ members = [] }) {
                 {/* Right side: Trophies, League, Donations */}
                 <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-neutral-100 dark:border-neutral-800/80 shrink-0">
                   {/* Donations */}
-                  <div className="flex items-center gap-2 text-xs font-mono">
+                  <div className="flex items-center gap-2 text-xs font-sans">
                     <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5" title="Donations given">
                       <span>▲</span>
                       <span>{(member.donations || 0).toLocaleString()}</span>
@@ -335,7 +335,7 @@ export default function ClanMemberList({ members = [] }) {
                       showName={false}
                       size="sm"
                     />
-                    <div className="flex items-center gap-1 font-mono text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                    <div className="flex items-center gap-1 font-sans text-sm font-bold text-neutral-900 dark:text-neutral-100">
                       <Image
                         src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png"
                         width={16}

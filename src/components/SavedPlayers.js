@@ -260,7 +260,7 @@ export default function SavedPlayers({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-neutral-800 dark:text-neutral-100">{item.name || item.tag}</span>
-                  {item.clanName ? <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">⚔️ {item.clanName}{role ? <><span className="px-1">|</span>{role}</> : null}</span> : <span className="mt-0.5 block truncate font-mono text-[10px] text-neutral-400">{item.tag}</span>}
+                  {item.clanName ? <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">⚔️ {item.clanName}{role ? <><span className="px-1">|</span>{role}</> : null}</span> : <span className="mt-0.5 block truncate font-sans text-[10px] text-neutral-400">{item.tag}</span>}
                 </span>
               </button>
 

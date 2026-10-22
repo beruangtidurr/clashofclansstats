@@ -47,7 +47,7 @@ export default function ClanSearchPage() {
             placeholder="Enter clan tag (e.g. #2J8Q9YCGV)"
             value={tag}
             onChange={(e) => setTag(e.target.value)}
-            className="w-full bg-transparent px-1 py-1 text-sm font-mono uppercase text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans focus:outline-none"
+            className="w-full bg-transparent px-1 py-1 text-sm font-sans uppercase text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans focus:outline-none"
           />
           <button
             type="submit"
