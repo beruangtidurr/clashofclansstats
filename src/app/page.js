@@ -1,8 +1,8 @@
 // src/app/page.js
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
@@ -17,6 +17,7 @@ import Image from 'next/image';
 
 function HomeContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const queryTag = searchParams.get('tag');
 
   const [tag, setTag] = useState('');
@@ -32,6 +33,7 @@ function HomeContent() {
   const [cwlError, setCwlError] = useState(null);
   const [activeTab, setActiveTab] = useState('battles');
   const [copiedTag, setCopiedTag] = useState(false);
+  const searchRequestId = useRef(0);
 
   const {
     savedPlayers,
@@ -44,9 +46,10 @@ function HomeContent() {
   } = useSavedPlayers();
 
   const searchPlayer = useCallback(async (targetTag) => {
-    const cleanTag = (targetTag || tag).trim();
+    const cleanTag = (targetTag || '').trim();
     if (!cleanTag) return;
 
+    const requestId = ++searchRequestId.current;
     setShowSavedPlayers(false);
     setTag(cleanTag);
     setLoading(true);
@@ -63,6 +66,8 @@ function HomeContent() {
       getPlayerBattleHistory(cleanTag),
       getPlayerCwlHistory(cleanTag),
     ]);
+
+    if (requestId !== searchRequestId.current) return;
 
     if (playerResult.error) {
       setError(playerResult.error);
@@ -91,7 +96,7 @@ function HomeContent() {
     setLoading(false);
     setBattleLoading(false);
     setCwlLoading(false);
-  }, [tag, enrichSavedPlayer]);
+  }, [enrichSavedPlayer]);
 
   useEffect(() => {
     if (queryTag) {
@@ -111,13 +116,17 @@ function HomeContent() {
   };
 
   const handleClearSearch = () => {
+    searchRequestId.current += 1;
+    router.replace('/', { scroll: false });
     setTag('');
     setPlayer(null);
     setError(null);
     setBattles(null);
     setBattleError(null);
+    setBattleLoading(false);
     setCwl(null);
     setCwlError(null);
+    setCwlLoading(false);
     setShowSavedPlayers(true);
   };
 
@@ -191,7 +200,7 @@ function HomeContent() {
           >
             {loading ? 'Searching...' : 'Search'}
           </button>
-          {!showSavedPlayers && (
+          {(!showSavedPlayers || queryTag || tag.trim() || player) && (
             <button
               type="button"
               onClick={handleClearSearch}

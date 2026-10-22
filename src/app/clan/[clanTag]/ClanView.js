@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ClanInfoCard from '@/components/ClanInfoCard';
 import ClanMemberList from '@/components/ClanMemberList';
+import SavedClans, { useSavedClans } from '@/components/SavedClans';
 import { getClanData, getClanMembers } from '@/app/actions';
 
 export default function ClanView({
@@ -22,6 +23,8 @@ export default function ClanView({
   const [membersError, setMembersError] = useState(initialMembersError);
   const [searchTag, setSearchTag] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [showClan, setShowClan] = useState(true);
+  const { savedClans, clearSavedClans } = useSavedClans();
 
   const cleanDisplayTag = clan?.tag || (clanTag ? decodeURIComponent(clanTag).trim() : '');
 
@@ -68,6 +71,11 @@ export default function ClanView({
     const clean = searchTag.trim().toUpperCase().replace(/^#/, '');
     if (!clean) return;
     router.push(`/clan/${encodeURIComponent(`#${clean}`)}`);
+  };
+
+  const handleClear = () => {
+    setSearchTag('');
+    setShowClan(false);
   };
 
   return (
@@ -130,11 +138,20 @@ export default function ClanView({
           >
             Go
           </button>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-600 hover:bg-white dark:text-neutral-300 dark:hover:bg-neutral-800 text-xs sm:text-sm font-medium transition-colors cursor-pointer shrink-0"
+          >
+            Clear
+          </button>
         </div>
       </form>
 
+      {!showClan && <SavedClans savedClans={savedClans} onClear={clearSavedClans} />}
+
       {/* Error state */}
-      {error ? (
+      {showClan && error ? (
         <div className="p-6 rounded-2xl border border-red-500/20 bg-red-500/5 text-center">
           <div className="text-red-600 dark:text-red-400 text-sm font-semibold mb-1">
             Failed to Load Clan
@@ -158,7 +175,7 @@ export default function ClanView({
             </Link>
           </div>
         </div>
-      ) : (
+      ) : showClan ? (
         <>
           {/* Clan Overview Details */}
           {clan && <ClanInfoCard clan={clan} />}
@@ -173,7 +190,7 @@ export default function ClanView({
           {/* Clan Members List */}
           <ClanMemberList members={members} />
         </>
-      )}
+      ) : null}
     </main>
   );
 }

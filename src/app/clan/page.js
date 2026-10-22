@@ -3,9 +3,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import SavedClans, { useSavedClans, normalizeClanTag } from '@/components/SavedClans';
 
 export default function ClanSearchPage() {
   const [tag, setTag] = useState('');
+  const { savedClans, isClanSaved, toggleSavedClan, clearSavedClans } = useSavedClans();
   const router = useRouter();
 
   useEffect(() => {
@@ -49,6 +51,17 @@ export default function ClanSearchPage() {
             onChange={(e) => setTag(e.target.value)}
             className="w-full bg-transparent px-1 py-1 text-sm font-sans uppercase text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans focus:outline-none"
           />
+          {tag.trim() && (
+            <button
+              type="button"
+              onClick={() => toggleSavedClan({ tag: normalizeClanTag(tag) })}
+              title={isClanSaved(tag) ? 'Remove clan bookmark' : 'Bookmark this clan'}
+              aria-label={isClanSaved(tag) ? 'Remove clan bookmark' : 'Bookmark this clan'}
+              className={`rounded-lg p-1 transition-colors ${isClanSaved(tag) ? 'text-amber-500' : 'text-neutral-400 hover:text-amber-500'}`}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292Z" /></svg>
+            </button>
+          )}
           <button
             type="submit"
             className="px-4 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 text-xs sm:text-sm font-medium transition-colors cursor-pointer shrink-0"
@@ -57,6 +70,7 @@ export default function ClanSearchPage() {
           </button>
         </div>
       </form>
+      <SavedClans savedClans={savedClans} onClear={clearSavedClans} />
     </main>
   );
 }

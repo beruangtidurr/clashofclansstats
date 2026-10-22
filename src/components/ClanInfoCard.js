@@ -3,9 +3,11 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useSavedClans } from '@/components/SavedClans';
 
 export default function ClanInfoCard({ clan }) {
   const [copied, setCopied] = useState(false);
+  const { isClanSaved, toggleSavedClan } = useSavedClans();
 
   if (!clan) return null;
 
@@ -64,6 +66,16 @@ export default function ClanInfoCard({ clan }) {
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                 {clan.name}
               </h2>
+              <button
+                type="button"
+                onClick={() => toggleSavedClan(clan)}
+                aria-pressed={isClanSaved(clan.tag)}
+                aria-label={isClanSaved(clan.tag) ? 'Remove clan bookmark' : 'Bookmark this clan'}
+                className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors cursor-pointer ${isClanSaved(clan.tag) ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800'}`}
+              >
+                <svg className="h-3.5 w-3.5 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72a1 1 0 0 1 .588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292Z" /></svg>
+                {isClanSaved(clan.tag) ? 'Bookmarked' : 'Bookmark'}
+              </button>
               <span className="text-xs px-2 py-0.5 font-semibold rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200/80 dark:border-neutral-700/80">
                 Level {clan.clanLevel}
               </span>
