@@ -20,6 +20,7 @@ function HomeContent() {
   const queryTag = searchParams.get('tag');
 
   const [tag, setTag] = useState('');
+  const [showSavedPlayers, setShowSavedPlayers] = useState(true);
   const [player, setPlayer] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,7 @@ function HomeContent() {
     const cleanTag = (targetTag || tag).trim();
     if (!cleanTag) return;
 
+    setShowSavedPlayers(false);
     setTag(cleanTag);
     setLoading(true);
     setError(null);
@@ -106,6 +108,17 @@ function HomeContent() {
   const handleSearch = (e) => {
     if (e) e.preventDefault();
     searchPlayer(tag);
+  };
+
+  const handleClearSearch = () => {
+    setTag('');
+    setPlayer(null);
+    setError(null);
+    setBattles(null);
+    setBattleError(null);
+    setCwl(null);
+    setCwlError(null);
+    setShowSavedPlayers(true);
   };
 
   const handleCopyTag = (playerTag) => {
@@ -178,17 +191,28 @@ function HomeContent() {
           >
             {loading ? 'Searching...' : 'Search'}
           </button>
+          {!showSavedPlayers && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="px-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 text-neutral-600 hover:bg-white dark:text-neutral-300 dark:hover:bg-neutral-800 text-xs sm:text-sm font-medium transition-colors cursor-pointer shrink-0"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </form>
 
       {/* Saved Players list */}
-      <SavedPlayers
-        savedPlayers={savedPlayers}
-        currentTag={player ? player.tag : tag}
-        onSelectPlayer={(selectedTag) => searchPlayer(selectedTag)}
-        onRemovePlayer={(tagToRemove) => handleRemoveSavedPlayer(tagToRemove)}
-        onClearAll={handleClearAllSaved}
-      />
+      {showSavedPlayers && (
+        <SavedPlayers
+          savedPlayers={savedPlayers}
+          currentTag={player ? player.tag : tag}
+          onSelectPlayer={(selectedTag) => searchPlayer(selectedTag)}
+          onRemovePlayer={(tagToRemove) => handleRemoveSavedPlayer(tagToRemove)}
+          onClearAll={handleClearAllSaved}
+        />
+      )}
 
       {/* Error state */}
       {error && (

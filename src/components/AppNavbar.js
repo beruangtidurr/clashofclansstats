@@ -20,9 +20,25 @@ function NavIcon({ type }) {
 
 export default function AppNavbar() {
   const [open, setOpen] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const pathname = usePathname();
 
   useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem('coc-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const dark = storedTheme ? storedTheme === 'dark' : prefersDark;
+    setIsDark(dark);
+    document.documentElement.classList.toggle('dark', dark);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextIsDark = !isDark;
+    setIsDark(nextIsDark);
+    document.documentElement.classList.toggle('dark', nextIsDark);
+    window.localStorage.setItem('coc-theme', nextIsDark ? 'dark' : 'light');
+  };
+
   useEffect(() => {
     if (!open) return undefined;
     const closeOnEscape = (event) => {
@@ -43,12 +59,38 @@ export default function AppNavbar() {
         <Link href="/" className="text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-50">Clash of Stats</Link>
       </div>
       <button type="button" aria-label="Close navigation menu" onClick={() => setOpen(false)} aria-hidden={!open} tabIndex={open ? 0 : -1} className={`fixed inset-x-0 bottom-0 top-14 z-40 bg-black/50 transition-opacity duration-300 ease-out ${open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`} />
-      <nav id="app-navigation" aria-label="Main navigation" aria-hidden={!open} className={`fixed bottom-0 left-0 top-14 z-50 flex w-64 flex-col border-r border-neutral-800 bg-black px-3 pb-5 pt-5 text-white shadow-xl shadow-black/30 transition-transform duration-300 ease-out motion-reduce:transition-none ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+      <nav id="app-navigation" aria-label="Main navigation" aria-hidden={!open} className={`fixed bottom-0 left-0 top-14 z-50 flex w-64 flex-col border-r px-3 pb-5 pt-5 shadow-xl transition-transform duration-300 ease-out motion-reduce:transition-none ${isDark ? 'border-neutral-800 bg-black text-white shadow-black/30' : 'border-neutral-200 bg-white text-neutral-900 shadow-neutral-900/10'} ${open ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex flex-col gap-1">
           {LINKS.map(({ href, label, icon }) => {
             const active = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
-            return <Link key={href} href={href} aria-current={active ? 'page' : undefined} tabIndex={open ? 0 : -1} className={`flex h-12 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition ${active ? 'bg-white/10 text-white' : 'text-white/65 hover:bg-white/5 hover:text-white'}`}><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg"><NavIcon type={icon} /></span><span>{label}</span></Link>;
+            return <Link key={href} href={href} aria-current={active ? 'page' : undefined} tabIndex={open ? 0 : -1} className={`flex h-12 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition ${isDark ? (active ? 'bg-white/10 text-white' : 'text-white/65 hover:bg-white/5 hover:text-white') : (active ? 'bg-neutral-100 text-neutral-950' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950')}`}><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg"><NavIcon type={icon} /></span><span>{label}</span></Link>;
           })}
+          </div>
+          <div className={`mt-auto rounded-2xl border p-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-neutral-200 bg-neutral-50'}`}>
+            <div role="group" aria-label="Theme" className={`grid grid-cols-2 gap-1 rounded-xl p-1 ${isDark ? 'bg-black/30' : 'bg-neutral-200/70'}`}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isDark) toggleTheme();
+                }}
+                aria-pressed={!isDark}
+                className={`flex h-10 items-center justify-center gap-2 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${!isDark ? 'bg-white text-neutral-900 shadow-sm' : 'text-white/65 hover:bg-white/5 hover:text-white'}`}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isDark) toggleTheme();
+                }}
+                aria-pressed={isDark}
+                className={`flex h-10 items-center justify-center gap-2 rounded-lg text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${isDark ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-600 hover:bg-white/60 hover:text-neutral-900'}`}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" /></svg>
+                Dark
+              </button>
+            </div>
           </div>
       </nav>
     </header>
