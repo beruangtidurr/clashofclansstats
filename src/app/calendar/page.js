@@ -1,20 +1,24 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const EVENTS = [
-  { id: 'cwl', name: 'Clan War League', start: '2026-10-01', end: '2026-10-11', type: 'Clan', color: 'bg-violet-500', detail: 'Monthly clan league season.' },
-  { id: 'battle-options-1', name: 'Battle Options', start: '2026-10-01', end: '2026-10-05', type: 'Special event', color: 'bg-sky-500', detail: 'First Battle Options window of the season.' },
-  { id: 'challenge', name: 'Challenge Level', start: '2026-10-06', end: '2026-10-13', type: 'Challenge', color: 'bg-amber-500', detail: 'Seasonal challenge level.' },
-  { id: 'portal-panic', name: 'Portal Panic Medal Event', start: '2026-10-08', end: '2026-10-25', type: 'Medal event', color: 'bg-fuchsia-500', detail: 'Collect Sour Elixir and earn Rift Medals. Available from Town Hall 6.' },
-  { id: 'treasure-hunt', name: 'Treasure Hunt', start: '2026-10-10', end: '2026-10-17', type: 'Event', color: 'bg-emerald-500', detail: 'A limited-time treasure hunt event.' },
-  { id: 'resource-fest-1', name: 'Resource Fest', start: '2026-10-12', end: '2026-10-14', type: 'Boost', color: 'bg-cyan-500', detail: 'Increased production from eligible resource collectors.' },
-  { id: 'cosmic-streak', name: 'Cosmic Streak', start: '2026-10-16', end: '2026-10-31', type: 'Community event', color: 'bg-indigo-500', detail: 'Seasonal community progression event.' },
-  { id: 'battle-options-2', name: 'Battle Options', start: '2026-10-17', end: '2026-10-21', type: 'Special event', color: 'bg-sky-500', detail: 'Second Battle Options window of the season.' },
-  { id: 'pendant-boost', name: 'Portal Pendant Boost', start: '2026-10-20', end: '2026-10-25', type: 'Equipment boost', color: 'bg-rose-500', detail: 'Portal Pendant is boosted to its maximum level. Town Hall 9 and above.' },
-  { id: 'clan-games', name: 'Clan Games', start: '2026-10-22', end: '2026-10-28', type: 'Clan', color: 'bg-violet-500', detail: 'Complete challenges with your clan to earn rewards.' },
-  { id: 'resource-fest-2', name: 'Resource Fest', start: '2026-10-26', end: '2026-10-28', type: 'Boost', color: 'bg-cyan-500', detail: 'Second resource production boost window of the month.' },
-  { id: 'trader-shop', name: 'Portal Panic shop closes', start: '2026-10-27', end: '2026-10-28', type: 'Last chance', color: 'bg-orange-500', detail: 'Spend remaining Rift Medals before the Event Shop closes at 08:00 UTC.' },
+  { id: 'gold-pass', name: 'November Gold Pass', start: '2026-11-01', end: '2026-12-01', type: 'Season', color: 'bg-amber-500', detail: 'The November Gold Pass features the Grand Titan (Grand Warden).' },
+  { id: 'hammer-jam', name: 'Hammer Jam', start: '2026-11-01', end: '2026-11-16', type: 'Boost', color: 'bg-cyan-500', detail: '50% off upgrade timers and costs, plus a 2× boost to resource collector capacity and production.' },
+  { id: 'cwl', name: 'November Clan War League', start: '2026-11-01', end: '2026-11-11', type: 'Clan', color: 'bg-violet-500', detail: 'November Clan War League.' },
+  { id: 'titan-foundry', name: 'Titan Foundry Scenery', start: '2026-11-03', end: '2026-12-01', type: 'Shop', color: 'bg-indigo-500', detail: 'Titan Foundry scenery available in the shop.' },
+  { id: 'titan-king', name: 'Titan King skin', start: '2026-11-05', end: '2026-12-01', type: 'Hero skin', color: 'bg-rose-500', detail: 'Titan King (Barbarian King) skin arrives in the shop.' },
+  { id: 'titan-prince', name: 'Titan Prince skin', start: '2026-11-07', end: '2026-12-01', type: 'Hero skin', color: 'bg-rose-500', detail: 'Titan Prince (Minion Prince) skin arrives in the shop.' },
+  { id: 'troop-spotlight', name: 'Troop Spotlight Event', start: '2026-11-10', end: '2026-11-17', type: 'Medal event', color: 'bg-fuchsia-500', detail: 'Collect Ice Cubes with Super Yeti and earn Super Medals.' },
+  { id: 'th18-challenge', name: 'Last Town Hall 18 Challenge', start: '2026-11-09', end: '2026-11-16', type: 'Challenge', color: 'bg-amber-500', detail: 'The final Town Hall 18 Challenge.' },
+  { id: 'momma', name: 'M.O.M.M.A Mass Troop Event', start: '2026-11-09', end: '2026-11-10', type: 'Event', color: 'bg-emerald-500', detail: 'Use 25 M.O.M.M.As in battle for free at Town Hall 10 and above.' },
+  { id: 'titan-champion', name: 'Titan Champion skin', start: '2026-11-09', end: '2026-12-01', type: 'Hero skin', color: 'bg-rose-500', detail: 'Titan Champion (Royal Champion) skin arrives in the shop.' },
+  { id: 'titan-queen', name: 'Titan Queen skin', start: '2026-11-11', end: '2026-12-01', type: 'Hero skin', color: 'bg-rose-500', detail: 'Titan Queen (Archer Queen) skin arrives in the shop.' },
+  { id: 'titan-duke', name: 'Titan Duke', start: '2026-11-13', end: '2026-12-01', type: 'Hero skin', color: 'bg-rose-500', detail: 'Titan Duke (Dragon Duke) becomes available.' },
+  { id: 'treasure-hunt', name: 'Treasure Hunt', start: '2026-11-16', end: '2026-11-24', type: 'Event', color: 'bg-emerald-500', detail: 'Treasure Hunt returns for Town Hall 3 through 17.' },
+  { id: 'snackable-troops', name: 'Snackable Troops Event', start: '2026-11-20', end: '2026-11-27', type: 'Event', color: 'bg-sky-500', detail: 'Call in limited backup troops for battles.' },
+  { id: 'clan-games', name: 'November Clan Games', start: '2026-11-22', end: '2026-11-29', type: 'Clan', color: 'bg-violet-500', detail: 'November Clan Games, with Backup Troops for the first four days.' },
+  { id: 'fully-forged', name: 'Fully Forged Challenge', start: '2026-11-24', end: '2026-12-02', type: 'Challenge', color: 'bg-amber-500', detail: 'Assemble heroes made from Siege Machine parts in the Fully Forged Challenge.' },
 ];
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -33,10 +37,27 @@ function eventRange(event) {
 }
 
 export default function CalendarPage() {
-  const [month, setMonth] = useState(() => {
-    return new Date(2026, 9, 1);
-  });
-  const [selectedDate, setSelectedDate] = useState('2026-10-10');
+  const [today, setToday] = useState(() => new Date());
+  const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()));
+  useEffect(() => {
+    const updateToday = () => {
+      const current = new Date();
+      setToday(current);
+      setMonth((visibleMonth) => visibleMonth.getFullYear() === current.getFullYear() && visibleMonth.getMonth() === current.getMonth()
+        ? visibleMonth
+        : new Date(current.getFullYear(), current.getMonth(), 1));
+      setSelectedDate((selected) => selected === dateKey(today) ? dateKey(current) : selected);
+    };
+    const interval = setInterval(updateToday, 60_000);
+    window.addEventListener('focus', updateToday);
+    document.addEventListener('visibilitychange', updateToday);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', updateToday);
+      document.removeEventListener('visibilitychange', updateToday);
+    };
+  }, [today]);
   const monthId = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
   const monthEvents = EVENTS.filter((event) => event.start.startsWith(monthId));
   const days = useMemo(() => {
@@ -50,7 +71,7 @@ export default function CalendarPage() {
     });
   }, [month]);
   const selectedEvents = EVENTS.filter((event) => eventIsOnDate(event, selectedDate));
-  const todayKey = '2026-10-10';
+  const todayKey = dateKey(today);
 
   const changeMonth = (amount) => {
     const next = new Date(month.getFullYear(), month.getMonth() + amount, 1);
@@ -98,7 +119,7 @@ export default function CalendarPage() {
       <section className="mt-5 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/50 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{displayMonth(month, { month: 'long' })} schedule</h2><p className="mt-1 text-xs text-neutral-500">Published event dates can change. Check the in-game event screen for the latest countdown.</p></div><span className="rounded-lg bg-neutral-100 px-2 py-1 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800">{monthEvents.length} events</span></div>
         {monthEvents.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2">{monthEvents.map((event) => <button key={event.id} type="button" onClick={() => { setSelectedDate(event.start); document.getElementById('calendar-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="flex items-center gap-3 rounded-xl border border-neutral-100 px-3 py-3 text-left transition hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/50"><i className={`h-2.5 w-2.5 shrink-0 rounded-full ${event.color}`} /><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-neutral-800 dark:text-neutral-200">{event.name}</span><span className="mt-0.5 block text-[10px] text-neutral-400">{eventRange(event)}</span></span><span className="text-[10px] text-neutral-400">{event.type}</span></button>)}</div> : <p className="mt-4 text-xs text-neutral-500">No event schedule published for this month.</p>}
-        <p className="mt-4 border-t border-neutral-100 pt-3 text-[10px] text-neutral-400 dark:border-neutral-800">Sources: <a href="https://supercell.com/en/games/clashofclans/blog/news/the-portal-panic-medal-event-rifts-its-way-into-clash/" target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-neutral-700 dark:hover:text-neutral-200">Supercell event announcement</a> · <a href="https://www.sportsdunia.com/gaming/clash-of-clans-clash-o-ween-season-events-october-2026" target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-neutral-700 dark:hover:text-neutral-200">October schedule reference</a></p>
+        <p className="mt-4 border-t border-neutral-100 pt-3 text-[10px] text-neutral-400 dark:border-neutral-800">Source: <a href="https://supercell.com/en/games/clashofclans/blog/news/clash-of-titans-is-hot-off-the-press/" target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-neutral-700 dark:hover:text-neutral-200">Supercell November season schedule</a></p>
       </section>
     </main>
   );
