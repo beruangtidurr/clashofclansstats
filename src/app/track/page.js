@@ -11,6 +11,7 @@ import ITEM_NAMES from './item-names.json';
 const STORAGE_KEY = 'coc-village-tracker-v1';
 const IMPORT_KEY = 'coc-village-import-latest-v1';
 const ACCOUNTS_KEY = 'coc-village-tracker-accounts-v1';
+const CALENDAR_HIDDEN_KEY = 'coc-village-tracker-calendar-hidden-v1';
 const CATEGORIES = [
   { id: 'buildings', label: 'Buildings', key: 'buildings', icon: '' },
   { id: 'heroes', label: 'Heroes', key: 'heroes', icon: '' },
@@ -64,6 +65,14 @@ function formatFinishDateTime(timestamp) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(timestamp);
+}
+
+function calendarDateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function calendarDateLabel(value, options = { month: 'short', day: 'numeric' }) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, options);
 }
 
 function maxLevelAtHall(item, hallLevel, village = 'home') {
@@ -165,9 +174,15 @@ export default function TrackPage() {
   const [sortBy, setSortBy] = useState('default');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const sortMenuRef = useRef(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef(null);
   const [importMessage, setImportMessage] = useState('');
   const [now, setNow] = useState(Date.now());
   const [savedAccounts, setSavedAccounts] = useState([]);
+  const [calendarAccountTag, setCalendarAccountTag] = useState('');
+  const [calendarHidden, setCalendarHidden] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => calendarDateKey(new Date()));
 
   useEffect(() => {
     try {
@@ -201,6 +216,10 @@ export default function TrackPage() {
       localStorage.removeItem(IMPORT_KEY);
     }
     setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    setCalendarHidden(localStorage.getItem(CALENDAR_HIDDEN_KEY) === 'true');
   }, []);
 
   useEffect(() => {
@@ -238,10 +257,16 @@ export default function TrackPage() {
   }, []);
 
   useEffect(() => {
-    if (!sortMenuOpen) return undefined;
+    if (!sortMenuOpen && !accountMenuOpen) return undefined;
     const closeMenu = (event) => {
-      if (event.key === 'Escape') setSortMenuOpen(false);
-      if (event.type === 'pointerdown' && !sortMenuRef.current?.contains(event.target)) setSortMenuOpen(false);
+      if (event.key === 'Escape') {
+        setSortMenuOpen(false);
+        setAccountMenuOpen(false);
+      }
+      if (event.type === 'pointerdown') {
+        if (!sortMenuRef.current?.contains(event.target)) setSortMenuOpen(false);
+        if (!accountMenuRef.current?.contains(event.target)) setAccountMenuOpen(false);
+      }
     };
     document.addEventListener('keydown', closeMenu);
     document.addEventListener('pointerdown', closeMenu);
@@ -249,7 +274,7 @@ export default function TrackPage() {
       document.removeEventListener('keydown', closeMenu);
       document.removeEventListener('pointerdown', closeMenu);
     };
-  }, [sortMenuOpen]);
+  }, [sortMenuOpen, accountMenuOpen]);
 
   const playerProgress = progress[tagKey(player?.tag)] || {};
   const lookup = useCallback(async (event) => {
@@ -351,6 +376,44 @@ export default function TrackPage() {
     ? (eligibleCount ? Math.round(maxedCount / eligibleCount * 100) : 0)
     : (maxPossibleLevels ? Math.round(levelProgress / maxPossibleLevels * 100) : 0);
 
+  const calendarAccounts = useMemo(() => {
+    const accounts = Object.fromEntries(savedAccounts.map((account) => [tagKey(account.tag), account]));
+    if (player?.tag) accounts[tagKey(player.tag)] = player;
+    return Object.values(accounts);
+  }, [savedAccounts, player]);
+  const calendarAccount = calendarAccounts.find((account) => tagKey(account.tag) === calendarAccountTag)
+    || calendarAccounts.find((account) => tagKey(account.tag) === tagKey(player?.tag))
+    || calendarAccounts[0]
+    || null;
+  const calendarUpgrades = useMemo(() => {
+    const accountsToShow = calendarAccountTag === '__all__' ? calendarAccounts : calendarAccount ? [calendarAccount] : [];
+    return accountsToShow.flatMap((account) => {
+      const trackedProgress = progress[tagKey(account.tag)] || {};
+      const playerItems = getItems(account);
+      return CATEGORIES.flatMap((group) => (playerItems[group.key] || []).flatMap((item) => {
+        const record = trackedProgress[`${group.id}:${item.name}:${item.level}`];
+        const finishesAt = Number(item.timerEndsAt) || 0;
+        const id = `${tagKey(account.tag)}:${group.id}:${item.name}:${item.level}`;
+        if (finishesAt > 0 && finishesAt > now) return [{ id, name: item.name, group: group.label, level: item.level, finishesAt, estimated: false, account }];
+        if (record?.status !== 'upgrading') return [];
+        const markedAt = Number(record.updatedAt) || now;
+        const estimatedFinish = finishesAt || markedAt + 7 * 24 * 60 * 60 * 1000;
+        return estimatedFinish > now ? [{ id, name: item.name, group: group.label, level: item.level, finishesAt: estimatedFinish, estimated: true, account }] : [];
+      }));
+    });
+  }, [calendarAccount, calendarAccounts, calendarAccountTag, progress, now]);
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const offset = (firstDay.getDay() + 6) % 7;
+    const count = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
+    const total = Math.ceil((offset + count) / 7) * 7;
+    return Array.from({ length: total }, (_, index) => {
+      const day = index - offset + 1;
+      return day > 0 && day <= count ? new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day) : null;
+    });
+  }, [calendarMonth]);
+  const selectedCalendarUpgrades = calendarUpgrades.filter((upgrade) => calendarDateKey(new Date(upgrade.finishesAt)) === calendarSelectedDate);
+
   const setItemStatus = (item, status) => {
     const key = tagKey(player.tag);
     const itemKey = `${category}:${item.name}:${item.level}`;
@@ -405,6 +468,35 @@ export default function TrackPage() {
       </section>}
 
       {player && <>
+        <section className="mb-5 rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900/50">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:px-5">
+            <div><h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">Upgrade calendar</h2><p className="mt-1 text-xs text-neutral-500">See when tracked upgrades are expected to finish.</p></div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div ref={accountMenuRef} className="relative flex items-center gap-2 text-xs font-medium text-neutral-500"><span>Account</span><button type="button" onClick={() => setAccountMenuOpen((open) => !open)} aria-haspopup="listbox" aria-expanded={accountMenuOpen} aria-label="Account for upgrade calendar" className="inline-flex max-w-60 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left text-xs text-neutral-800 shadow-sm transition hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-400/40 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"><span className="truncate">{calendarAccountTag === '__all__' ? 'All accounts' : `${calendarAccount?.name && calendarAccount.name !== 'Imported village' ? calendarAccount.name : `Village ${calendarAccount?.tag}`} · ${calendarAccount?.tag || ''}`}</span><svg className={`h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" /></svg></button>{accountMenuOpen && <div role="listbox" aria-label="Calendar account" className="absolute right-0 top-full z-30 mt-2 max-h-64 w-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-1.5 shadow-xl shadow-neutral-900/10 dark:border-neutral-700 dark:bg-neutral-900 dark:shadow-black/30"><button type="button" role="option" aria-selected={calendarAccountTag === '__all__'} onClick={() => { setCalendarAccountTag('__all__'); setAccountMenuOpen(false); }} className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs transition ${calendarAccountTag === '__all__' ? 'bg-neutral-100 font-semibold text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100' : 'text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800/70'}`}><span>All accounts</span>{calendarAccountTag === '__all__' && <span aria-hidden="true">✓</span>}</button>{calendarAccounts.map((account) => {
+                const key = tagKey(account.tag);
+                const selected = calendarAccountTag === key || (!calendarAccountTag && key === tagKey(calendarAccount?.tag));
+                return <button key={key} type="button" role="option" aria-selected={selected} onClick={() => { setCalendarAccountTag(key); setAccountMenuOpen(false); }} className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-xs transition ${selected ? 'bg-neutral-100 font-semibold text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100' : 'text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800/70'}`}><span className="min-w-0"><span className="block truncate">{account.name && account.name !== 'Imported village' ? account.name : `Village ${account.tag}`}</span><span className="mt-0.5 block font-sans text-[10px] text-neutral-400">{account.tag}</span></span>{selected && <span aria-hidden="true">✓</span>}</button>;
+              })}</div>}</div>
+              <button type="button" onClick={() => setCalendarHidden((hidden) => { const next = !hidden; localStorage.setItem(CALENDAR_HIDDEN_KEY, String(next)); return next; })} aria-expanded={!calendarHidden} className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800">{calendarHidden ? 'Show calendar' : 'Hide calendar'}</button>
+            </div>
+          </div>
+          {!calendarHidden && <>
+          <div className="grid lg:grid-cols-[minmax(0,1.5fr)_minmax(220px,0.7fr)]">
+            <div className="min-w-0 border-b border-neutral-100 dark:border-neutral-800 lg:border-b-0 lg:border-r">
+              <div className="flex items-center justify-between px-4 py-3 sm:px-5"><h3 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{calendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</h3><div className="flex items-center gap-1"><button type="button" aria-label="Previous calendar month" onClick={() => { const next = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1); setCalendarMonth(next); setCalendarSelectedDate(calendarDateKey(next)); }} className="grid h-8 w-8 place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">‹</button><button type="button" onClick={() => { const today = new Date(); setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setCalendarSelectedDate(calendarDateKey(today)); }} className="rounded-lg px-2 py-1.5 text-[10px] font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800">Today</button><button type="button" aria-label="Next calendar month" onClick={() => { const next = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1); setCalendarMonth(next); setCalendarSelectedDate(calendarDateKey(next)); }} className="grid h-8 w-8 place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">›</button></div></div>
+              <div className="grid grid-cols-7 border-y border-neutral-100 dark:border-neutral-800">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <div key={day} className="py-2 text-center text-[9px] font-semibold uppercase tracking-wider text-neutral-400">{day}</div>)}</div>
+              <div className="grid grid-cols-7">{calendarDays.map((date, index) => {
+                if (!date) return <div key={`empty-${index}`} className="min-h-16 border-b border-r border-neutral-100 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-950/30 sm:min-h-20" />;
+                const key = calendarDateKey(date);
+                const dayUpgrades = calendarUpgrades.filter((upgrade) => calendarDateKey(new Date(upgrade.finishesAt)) === key);
+                const selected = calendarSelectedDate === key;
+                return <button key={key} type="button" onClick={() => setCalendarSelectedDate(key)} aria-pressed={selected} className={`min-h-16 border-b border-r border-neutral-100 p-1.5 text-left transition hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/50 sm:min-h-20 sm:p-2 ${selected ? 'bg-neutral-50 dark:bg-neutral-800/40' : ''}`}><span className={`grid h-6 w-6 place-items-center rounded-full text-[11px] ${key === calendarDateKey(new Date()) ? 'bg-neutral-900 font-bold text-white dark:bg-neutral-100 dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400'}`}>{date.getDate()}</span><span className="mt-1 flex flex-col gap-0.5">{dayUpgrades.slice(0, 2).map((upgrade) => <span key={upgrade.id} className="truncate text-[9px] text-amber-700 dark:text-amber-300">{upgrade.name}</span>)}{dayUpgrades.length > 2 && <span className="text-[9px] text-neutral-400">+{dayUpgrades.length - 2} more</span>}</span></button>;
+              })}</div>
+            </div>
+            <aside className="p-4 sm:p-5"><p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">{calendarDateLabel(calendarSelectedDate, { weekday: 'long', month: 'long', day: 'numeric' })}</p><h3 className="mt-1 text-sm font-bold text-neutral-900 dark:text-neutral-100">{selectedCalendarUpgrades.length ? `${selectedCalendarUpgrades.length} upgrade${selectedCalendarUpgrades.length === 1 ? '' : 's'} finishing` : 'No upgrades finishing'}</h3>{selectedCalendarUpgrades.length ? <div className="mt-3 space-y-2">{selectedCalendarUpgrades.map((upgrade) => <article key={upgrade.id} className="rounded-xl border border-neutral-100 p-3 dark:border-neutral-800"><p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{upgrade.name} <span className="font-normal text-neutral-400">Lv. {upgrade.level}</span></p><p className="mt-1 text-[10px] text-neutral-500">{upgrade.account.name && upgrade.account.name !== 'Imported village' ? upgrade.account.name : `Village ${upgrade.account.tag}`} · {upgrade.group} · {formatFinishDateTime(upgrade.finishesAt)}{upgrade.estimated ? ' · estimated' : ''}</p></article>)}</div> : <p className="mt-2 text-xs text-neutral-500">No tracked upgrade finish dates for this day.</p>}{calendarUpgrades.length === 0 && <p className="mt-4 rounded-lg bg-neutral-50 p-2.5 text-[10px] leading-relaxed text-neutral-500 dark:bg-neutral-950">Mark items as upgrading or import village data with timers to add them here.</p>}</aside>
+          </div>
+          </>}
+        </section>
         <section className="mb-5 flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900/50 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="flex items-center gap-3"><TownHallImage level={player.townHallLevel} /><div><h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{player.name === 'Imported village' ? `Village ${player.tag}` : player.name}</h2><p className="font-sans text-xs text-neutral-500">{player.tag}{player.clan ? ` · ${player.clan.name}` : ''}</p></div></div>
           <div className="grid grid-cols-3 gap-5 text-center sm:text-right"><div><div className="text-[10px] uppercase tracking-wider text-neutral-400">Town Hall</div><div className="mt-1 font-sans text-sm font-bold text-neutral-900 dark:text-neutral-100">TH {player.townHallLevel}</div></div><div><div className="text-[10px] uppercase tracking-wider text-neutral-400">Trophies</div><div className="mt-1 font-sans text-sm font-bold text-neutral-900 dark:text-neutral-100">{player.trophies?.toLocaleString()}</div></div><div><div className="text-[10px] uppercase tracking-wider text-neutral-400">Player level</div><div className="mt-1 font-sans text-sm font-bold text-neutral-900 dark:text-neutral-100">{player.expLevel}</div></div></div>
