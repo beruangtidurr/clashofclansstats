@@ -14,6 +14,28 @@ import BattleHistory from '@/components/BattleHistory';
 import CwlHistory from '@/components/CwlHistory';
 import SavedPlayers, { useSavedPlayers, normalizeTag, StarIcon } from '@/components/SavedPlayers';
 import Image from 'next/image';
+import TOWNHALL_MAX_LEVELS from './track/townhall-max-levels.json';
+
+const HERO_DATA_IDS = {
+  'Barbarian King': 28000000,
+  'Archer Queen': 28000001,
+  'Grand Warden': 28000002,
+  'Royal Champion': 28000004,
+  'Minion Prince': 28000006,
+  'Dragon Duke': 28000007,
+};
+
+function heroMaxLevelAtTownHall(hero, townHallLevel) {
+  const dataId = hero.dataId || hero.item?.id || HERO_DATA_IDS[hero.name];
+  const caps = TOWNHALL_MAX_LEVELS[`home:${dataId}`];
+  return caps?.[Math.min(17, Math.max(0, Number(townHallLevel) - 1))] || null;
+}
+
+function heroOverallMaxLevel(hero) {
+  const dataId = hero.dataId || hero.item?.id || HERO_DATA_IDS[hero.name];
+  const caps = TOWNHALL_MAX_LEVELS[`home:${dataId}`];
+  return caps?.[caps.length - 1] || null;
+}
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -388,7 +410,8 @@ function HomeContent() {
                         key={hero.name}
                         name={hero.name}
                         level={hero.level}
-                        maxLevel={hero.maxLevel}
+                        maxLevel={hero.maxLevel || heroOverallMaxLevel(hero)}
+                        townHallMaxLevel={heroMaxLevelAtTownHall(hero, player.townHallLevel)}
                       />
                     ))}
                 </div>

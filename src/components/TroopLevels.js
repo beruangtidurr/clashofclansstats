@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import TroopIcon from './TroopIcon';
+import TOWNHALL_MAX_LEVELS from '@/app/track/townhall-max-levels.json';
 
 const PET_ROSTER = [
   { name: 'L.A.S.S.I', maxLevel: 15, unlockTownHall: 14 },
@@ -47,7 +48,42 @@ const SIEGE_NAMES = new Set([
   'Sky Wagon',
 ]);
 
+const HOME_UNIT_NAME_IDS = {
+  'L.A.S.S.I': 73000000, 'Mighty Yak': 73000001, 'Electro Owl': 73000002,
+  Unicorn: 73000003, Phoenix: 73000004, 'Poison Lizard': 73000007,
+  Diggy: 73000008, Frosty: 73000009, 'Spirit Fox': 73000010,
+  'Angry Jelly': 73000011, Sneezy: 73000016, 'Greedy Raven': 73000017,
+  Barbarian: 4000000, Archer: 4000001, Goblin: 4000002, Giant: 4000003,
+  'Wall Breaker': 4000004, Balloon: 4000005, Wizard: 4000006, Healer: 4000007,
+  Dragon: 4000008, 'P.E.K.K.A': 4000009, Minion: 4000010, 'Hog Rider': 4000011,
+  Valkyrie: 4000012, Golem: 4000013, Witch: 4000015, 'Lava Hound': 4000017,
+  'Baby Dragon': 4000023, Miner: 4000024, Bowler: 4000022,
+  'Electro Dragon': 4000059, Yeti: 4000053, 'Ice Golem': 4000058,
+  'Dragon Rider': 4000065, Headhunter: 4000082, 'Apprentice Warden': 4000097,
+  'Electro Titan': 4000095, 'Root Rider': 4000110, Druid: 4000123,
+  Thrower: 4000132, 'Ruin Witch': 4000109, 'Meteor Golem': 4000177, Furnace: 4000150,
+  'Lightning Spell': 26000000, 'Healing Spell': 26000001, 'Rage Spell': 26000002,
+  'Jump Spell': 26000003, 'Freeze Spell': 26000005, 'Clone Spell': 26000016,
+  'Invisibility Spell': 26000035, 'Recall Spell': 26000053, 'Overgrowth Spell': 26000070,
+  'Revive Spell': 26000098, 'Earthquake Spell': 26000010, 'Poison Spell': 26000009,
+  'Haste Spell': 26000011, 'Skeleton Spell': 26000017, 'Bat Spell': 26000028,
+  'Angry Spell': 26000123, 'Ice Block Spell': 26000109, 'Totem Spell': 26000120,
+};
+
 export default function TroopLevels({ troops = [], spells = [], townHallLevel = 0 }) {
+  const maxLevelAtTownHall = (item) => {
+    if (!townHallLevel) return null;
+    const dataId = Number(item.dataId || item.item?.id || HOME_UNIT_NAME_IDS[item.name]);
+    if (!dataId) return null;
+    const caps = TOWNHALL_MAX_LEVELS[`home:${dataId}`];
+    return caps?.[Math.min(17, Math.max(0, Number(townHallLevel) - 1))] || null;
+  };
+  const overallMaxLevel = (item) => {
+    if (item.maxLevel) return item.maxLevel;
+    const dataId = Number(item.dataId || item.item?.id || HOME_UNIT_NAME_IDS[item.name]);
+    const caps = dataId ? TOWNHALL_MAX_LEVELS[`home:${dataId}`] : null;
+    return caps?.[caps.length - 1] || null;
+  };
   // Group troops & spells by categories
   const categories = useMemo(() => {
     const homeTroops = (troops || []).filter(
@@ -79,12 +115,13 @@ export default function TroopLevels({ troops = [], spells = [], townHallLevel = 
           isActiveSuperTroop: Boolean(t.superTroopIsActive),
         });
       } else {
-        regularTroops.push({ ...t, itemType: 'troop' });
+        regularTroops.push({ ...t, dataId: t.dataId || t.item?.id, itemType: 'troop' });
       }
     }
 
     const spellList = (spells || []).map((s) => ({
       ...s,
+      dataId: s.dataId || s.item?.id,
       itemType: 'spell',
     }));
 
@@ -142,7 +179,9 @@ export default function TroopLevels({ troops = [], spells = [], townHallLevel = 
                 key={`pet-${pet.name}`}
                 name={pet.name}
                 level={pet.level}
-                maxLevel={pet.maxLevel}
+                maxLevel={overallMaxLevel(pet)}
+                townHallMaxLevel={maxLevelAtTownHall(pet)}
+                townHallLevel={townHallLevel}
                 type="pet"
               />
             ))}
@@ -167,7 +206,9 @@ export default function TroopLevels({ troops = [], spells = [], townHallLevel = 
                     key={`${item.itemType}-${item.name}`}
                     name={item.name}
                     level={item.level}
-                    maxLevel={item.maxLevel}
+                    maxLevel={overallMaxLevel(item)}
+                    townHallMaxLevel={maxLevelAtTownHall(item)}
+                    townHallLevel={townHallLevel}
                     type={item.itemType}
                     isActiveSuperTroop={item.isActiveSuperTroop}
                     isLocked={item.isLocked}

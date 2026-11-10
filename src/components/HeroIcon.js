@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-export default function HeroIcon({ name, level = 1, maxLevel }) {
+export default function HeroIcon({ name, level = 1, maxLevel, townHallMaxLevel }) {
   const [imageError, setImageError] = useState(false);
   const [prevName, setPrevName] = useState(name);
 
@@ -65,12 +65,10 @@ export default function HeroIcon({ name, level = 1, maxLevel }) {
       </div>
 
       {/* Hover Tooltip */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs text-white shadow-md dark:bg-neutral-800 z-30 pointer-events-none">
-        <span className="font-semibold">{name}</span>
-        <span className="text-[11px] text-neutral-300 dark:text-neutral-400 font-sans">
-          Lv. {level}{maxLevel ? ` (Max ${maxLevel})` : ''}{isMax ? ' · MAX' : ''}
-        </span>
-        <div className="w-1.5 h-1.5 -mb-1 bg-neutral-900 dark:bg-neutral-800 rotate-45" />
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center whitespace-nowrap rounded-md bg-white px-2.5 py-1 text-xs leading-[17px] text-neutral-800 shadow-md dark:bg-neutral-100 z-30 pointer-events-none">
+        <span>{name}</span>
+        <span className="font-sans">Level {level}</span>
+        {townHallMaxLevel && <span className="font-sans">Max. {maxLevel || townHallMaxLevel} ({townHallMaxLevel})</span>}
       </div>
     </div>
   );
