@@ -212,7 +212,7 @@ export default function CwlHistory({ cwl, loading, error }) {
                         {formatSeason(season.season)}
                       </h4>
                       {season.townHallLevel && (
-                        <span className="text-[10px] px-1.5 py-0.2 font-medium rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
+                        <span className="text-[10px] px-1.5 py-0.5 font-medium rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
                           TH{season.townHallLevel}
                         </span>
                       )}
@@ -297,7 +297,7 @@ export default function CwlHistory({ cwl, loading, error }) {
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1 text-xs">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-[11px] px-1.5 py-0.2 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                              <span className="font-semibold text-[11px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                                 Round {attack.round}
                               </span>
                               {attack.opponent?.name && (

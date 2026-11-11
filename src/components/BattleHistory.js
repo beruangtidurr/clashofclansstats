@@ -3,10 +3,24 @@
 
 import { useState, useMemo } from 'react';
 
+function parseBattleDate(value) {
+  if (!value) return null;
+  if (typeof value === 'number' || /^\d+$/.test(String(value).trim())) return null;
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return parsed;
+
+  // Clash timestamps commonly use the compact API form: YYYYMMDDTHHmmss.sssZ.
+  const compact = String(value).match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(?:\.(\d+))?Z?$/);
+  if (!compact) return null;
+  const [, year, month, day, hour, minute, second, fraction = '0'] = compact;
+  return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second), Number(`0.${fraction}`) * 1000));
+}
+
 function formatRelativeTime(isoString) {
-  if (!isoString) return '';
+  const date = parseBattleDate(isoString);
+  if (!date) return '';
   try {
-    const diffMs = Date.now() - new Date(isoString).getTime();
+    const diffMs = Date.now() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
@@ -15,7 +29,7 @@ function formatRelativeTime(isoString) {
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 30) return `${diffDays}d ago`;
-    return new Date(isoString).toLocaleDateString(undefined, {
+    return date.toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
     });
@@ -25,9 +39,10 @@ function formatRelativeTime(isoString) {
 }
 
 function formatFullTime(isoString) {
-  if (!isoString) return '';
+  const date = parseBattleDate(isoString);
+  if (!date) return '';
   try {
-    return new Date(isoString).toLocaleString(undefined, {
+    return date.toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -36,7 +51,7 @@ function formatFullTime(isoString) {
       second: '2-digit',
     });
   } catch {
-    return isoString;
+    return '';
   }
 }
 
@@ -85,9 +100,13 @@ function DarkElixirIcon() {
 }
 
 export default function BattleHistory({ battles, loading, error }) {
+  const [selectedDirection, setSelectedDirection] = useState('attack');
   const [selectedMode, setSelectedMode] = useState('all');
   const [visibleCount, setVisibleCount] = useState(10);
   const [copiedCode, setCopiedCode] = useState(null);
+  const hasDirectionData = Array.isArray(battles) && battles.length > 0 && battles.every((battle) => typeof battle.isAttack === 'boolean');
+  const attackCount = Array.isArray(battles) ? battles.filter((battle) => battle.isAttack === true).length : 0;
+  const defenseCount = Array.isArray(battles) ? battles.filter((battle) => battle.isAttack === false).length : 0;
 
   // Available modes from items
   const modes = useMemo(() => {
@@ -102,14 +121,18 @@ export default function BattleHistory({ battles, loading, error }) {
   // Filtered battles
   const filteredBattles = useMemo(() => {
     if (!Array.isArray(battles)) return [];
-    if (selectedMode === 'all') return battles;
-    return battles.filter((b) => b.battleMode === selectedMode);
-  }, [battles, selectedMode]);
+    return battles.filter((battle) => {
+      const matchesDirection = selectedDirection === 'all'
+        || (selectedDirection === 'attack' ? battle.isAttack === true : battle.isAttack === false);
+      const matchesMode = selectedMode === 'all' || battle.battleMode === selectedMode;
+      return matchesDirection && matchesMode;
+    });
+  }, [battles, selectedDirection, selectedMode]);
 
   // Aggregate stats
   const stats = useMemo(() => {
-    if (!Array.isArray(battles) || battles.length === 0) return null;
-    const total = battles.length;
+    if (!filteredBattles.length) return null;
+    const total = filteredBattles.length;
     let totalStars = 0;
     let threeStars = 0;
     let totalDestruction = 0;
@@ -117,7 +140,7 @@ export default function BattleHistory({ battles, loading, error }) {
     let totalElixir = 0;
     let totalDarkElixir = 0;
 
-    battles.forEach((b) => {
+    filteredBattles.forEach((b) => {
       totalStars += b.stars ?? 0;
       if (b.stars === 3) threeStars += 1;
       totalDestruction += b.destructionPercentage ?? 0;
@@ -137,7 +160,7 @@ export default function BattleHistory({ battles, loading, error }) {
       totalElixir,
       totalDarkElixir,
     };
-  }, [battles]);
+  }, [filteredBattles]);
 
   const handleCopyArmy = (shareCode) => {
     if (!shareCode) return;
@@ -151,26 +174,12 @@ export default function BattleHistory({ battles, loading, error }) {
   };
 
   if (loading) {
-    return (
-      <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 p-6 bg-white dark:bg-neutral-900/40 animate-pulse space-y-4">
-        <div className="h-5 bg-neutral-100 dark:bg-neutral-800 rounded w-1/4" />
-        <div className="grid grid-cols-4 gap-2">
-          <div className="h-14 bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
-          <div className="h-14 bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
-          <div className="h-14 bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
-          <div className="h-14 bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
-        </div>
-        <div className="space-y-3 pt-2">
-          <div className="h-20 bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
-          <div className="h-20 bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
-        </div>
-      </div>
-    );
+    return <div className="space-y-4 py-4 animate-pulse"><div className="h-4 w-1/4 bg-neutral-200 dark:bg-neutral-800" /><div className="h-px bg-neutral-200 dark:bg-neutral-800" /><div className="h-16 bg-neutral-100 dark:bg-neutral-900" /><div className="h-16 bg-neutral-100 dark:bg-neutral-900" /></div>;
   }
 
   if (error && (!battles || battles.length === 0)) {
     return (
-      <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 p-8 bg-white dark:bg-neutral-900/40 text-center">
+      <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 p-6 bg-white dark:bg-neutral-900/40 text-center">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           Unable to load battle history: {error}
         </p>
@@ -188,58 +197,34 @@ export default function BattleHistory({ battles, loading, error }) {
     );
   }
 
+  if (!filteredBattles.length) {
+    return <div className="py-8 text-center"><p className="text-sm text-neutral-500 dark:text-neutral-400">No {selectedDirection === 'defense' ? 'defense' : 'attack'} records found for this player.</p></div>;
+  }
+
   const visibleBattles = filteredBattles.slice(0, visibleCount);
 
   return (
     <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 p-5 sm:p-6 bg-white dark:bg-neutral-900/40">
       {/* Header & Filter Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-        <div className="flex items-center gap-2">
+      <div className="mb-5 flex flex-col gap-4">
+        <div className="flex flex-wrap items-baseline justify-start gap-x-3 gap-y-1">
           <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-            Recent Attacks
+            {selectedDirection === 'defense' ? 'Recent Defenses' : selectedDirection === 'all' ? 'Recent Battles' : 'Recent Attacks'}
           </h3>
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
-            {filteredBattles.length}
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">
+            {filteredBattles.length} {filteredBattles.length === 1 ? 'result' : 'results'}
           </span>
         </div>
 
-        {/* Mode filter pills */}
-        {modes.length > 1 && (
-          <div className="flex items-center gap-1 overflow-x-auto text-xs">
-            <button
-              onClick={() => {
-                setSelectedMode('all');
-                setVisibleCount(10);
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                selectedMode === 'all'
-                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                  : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-              }`}
-            >
-              All
-            </button>
-            {modes.map((mode) => {
-              const isSelected = selectedMode === mode;
-              return (
-                <button
-                  key={mode}
-                  onClick={() => {
-                    setSelectedMode(mode);
-                    setVisibleCount(10);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors cursor-pointer ${
-                    isSelected
-                      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                      : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                  }`}
-                >
-                  {mode}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {(hasDirectionData || modes.length > 1) && <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-start sm:gap-x-8 sm:gap-y-3 [&>div]:!ml-0">
+          {hasDirectionData && <div className="flex flex-col items-start gap-1.5"><span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Result</span><div role="group" aria-label="Battle direction" className="flex flex-wrap items-center gap-x-4 gap-y-2">{[
+            ['attack', `Attacks (${attackCount})`],
+            ['defense', `Defenses (${defenseCount})`],
+            ['all', 'All'],
+          ].map(([direction, label]) => <button key={direction} type="button" aria-pressed={selectedDirection === direction} onClick={() => { setSelectedDirection(direction); setVisibleCount(10); }} className={`whitespace-nowrap border-b-2 pb-1.5 text-xs transition-colors ${selectedDirection === direction ? 'border-neutral-900 font-semibold text-neutral-900 dark:border-neutral-100 dark:text-neutral-100' : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'}`}>{label}</button>)}</div></div>}
+
+          {modes.length > 1 && <div className="flex flex-col items-start gap-1.5"><span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Mode</span><div role="group" aria-label="Battle mode" className="flex flex-wrap items-center gap-x-4 gap-y-2"><button type="button" aria-pressed={selectedMode === 'all'} onClick={() => { setSelectedMode('all'); setVisibleCount(10); }} className={`border-b-2 pb-1.5 text-xs transition-colors cursor-pointer ${selectedMode === 'all' ? 'border-neutral-900 font-semibold text-neutral-900 dark:border-neutral-100 dark:text-neutral-100' : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'}`}>All</button>{modes.map((mode) => { const isSelected = selectedMode === mode; return <button key={mode} type="button" aria-pressed={isSelected} onClick={() => { setSelectedMode(mode); setVisibleCount(10); }} className={`border-b-2 pb-1.5 text-xs capitalize transition-colors cursor-pointer ${isSelected ? 'border-neutral-900 font-semibold text-neutral-900 dark:border-neutral-100 dark:text-neutral-100' : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'}`}>{mode}</button>; })}</div></div>}
+        </div>}
       </div>
 
       {/* Aggregate Stats Summary Bar */}
@@ -247,7 +232,7 @@ export default function BattleHistory({ battles, loading, error }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/50 dark:border-neutral-800/60 mb-5 text-center">
           <div>
             <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
-              3-Star Rate
+              {selectedDirection === 'defense' ? '3-Star Rate Conceded' : '3-Star Rate'}
             </div>
             <div className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
               {stats.threeStarRate}%
@@ -255,7 +240,7 @@ export default function BattleHistory({ battles, loading, error }) {
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
-              Avg Destruction
+              {selectedDirection === 'defense' ? 'Avg Destruction Taken' : 'Avg Destruction'}
             </div>
             <div className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
               {stats.avgDestruction}%
@@ -307,6 +292,7 @@ export default function BattleHistory({ battles, loading, error }) {
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
                     {battle.battleMode || 'Attack'}
                   </span>
+                  {typeof battle.isAttack === 'boolean' && <span className={`text-[10px] font-semibold uppercase tracking-wider ${battle.isAttack ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>{battle.isAttack ? 'Attack' : 'Defense'}</span>}
 
                   <span title={formatFullTime(battle.battleTime)} className="text-[11px]">
                     {formatRelativeTime(battle.battleTime)}

@@ -5,7 +5,11 @@ function getApiToken(importedToken) {
   return (importedToken || process.env.COC_API_TOKEN || '').trim();
 }
 
-export async function getPlayerData(playerTag) {
+function fetchCacheOptions(fresh, revalidate) {
+  return fresh ? { cache: 'no-store' } : { next: { revalidate } };
+}
+
+export async function getPlayerData(playerTag, fresh = false) {
   const token = getApiToken();
   
   if (!token) {
@@ -24,8 +28,7 @@ export async function getPlayerData(playerTag) {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
       },
-      // Revalidate data every 5 minutes (300s)
-      next: { revalidate: 300 },
+      ...fetchCacheOptions(fresh, 300),
     }
   );
 
@@ -38,7 +41,7 @@ export async function getPlayerData(playerTag) {
   return { data };
 }
 
-export async function getPlayerBattleHistory(playerTag) {
+export async function getPlayerBattleHistory(playerTag, fresh = false) {
   if (!playerTag) {
     return { data: [] };
   }
@@ -54,30 +57,96 @@ export async function getPlayerBattleHistory(playerTag) {
         headers: {
           Accept: 'application/json',
         },
-        // Revalidate battle history every 2 minutes (120s)
-        next: { revalidate: 120 },
+        ...fetchCacheOptions(fresh, 120),
       }
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return {
-        error: errorData.message || `Error ${response.status}: Failed to fetch battle history`,
-        data: [],
-      };
+      const fallback = await getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
+      if (fallback.data.length) return fallback;
+      return { error: errorData.message || `Error ${response.status}: Failed to fetch battle history`, data: [] };
     }
 
     const data = await response.json();
-    return { data: Array.isArray(data.items) ? data.items : [] };
+    const history = Array.isArray(data.items) ? data.items : [];
+    if (history.length) return { data: history.map((entry) => ({ ...entry, isAttack: getBattleDirection(entry, formattedTag) })) };
+    return getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
   } catch (err) {
-    return {
+    const fallback = await getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
+    return fallback.data.length ? fallback : {
       error: err.message || 'Failed to fetch battle history',
       data: [],
     };
   }
 }
 
-export async function getPlayerCwlHistory(playerTag) {
+async function getOfficialPlayerBattleLog(encodedTag, playerTag, fresh = false) {
+  const token = getApiToken();
+  if (!token) return { data: [] };
+
+  try {
+    const response = await fetch(
+      `https://cocproxy.royaleapi.dev/v1/players/${encodedTag}/battlelog`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+        ...fetchCacheOptions(fresh, 60),
+      }
+    );
+
+    if (!response.ok) return { data: [] };
+    const payload = await response.json();
+    const entries = Array.isArray(payload.items) ? payload.items : [];
+    return { data: entries.map((entry) => normalizeOfficialBattle(entry, playerTag)).filter(Boolean) };
+  } catch {
+    return { data: [] };
+  }
+}
+
+function getBattleDirection(entry, playerTag) {
+  if (typeof entry?.attack === 'boolean') return entry.attack;
+  if (typeof entry?.isAttack === 'boolean') return entry.isAttack;
+  const battle = entry?.battle || entry;
+  if (typeof battle?.attack === 'boolean') return battle.attack;
+
+  const normalize = (tag) => String(tag || '').toUpperCase().replace(/^#/, '');
+  const player = normalize(playerTag);
+  const attacker = normalize(entry?.attackerTag || battle?.attackerTag || battle?.attacker?.tag);
+  const defender = normalize(entry?.defenderTag || battle?.defenderTag || battle?.defender?.tag);
+  if (player && attacker === player) return true;
+  if (player && defender === player) return false;
+  return null;
+}
+
+function normalizeOfficialBattle(entry, playerTag) {
+  if (!entry || typeof entry !== 'object') return null;
+  const battle = entry.battle || entry;
+  const loot = battle.lootedResources || battle.loot || entry.lootedResources;
+  const lootedResources = Array.isArray(loot)
+    ? Object.fromEntries(loot.map((resource) => {
+      const normalizedName = String(resource.name || '').toLowerCase().replace(/[^a-z]/g, '');
+      const key = normalizedName === 'darkelixir' ? 'darkElixir' : normalizedName;
+      return [key, Number(resource.amount) || 0];
+    }))
+    : loot;
+
+  return {
+    battleMode: entry.battleMode || entry.battleType || battle.type || battle.mode || 'Attack',
+    isAttack: getBattleDirection(entry, playerTag),
+    battleTime: entry.battleTimestamp || entry.timestamp || (typeof entry.battleTime === 'string' ? entry.battleTime : '') || battle.battleTimestamp || (typeof battle.battleTime === 'string' ? battle.battleTime : ''),
+    stars: entry.stars ?? battle.stars ?? battle.attacker?.stars ?? 0,
+    destructionPercentage: entry.destructionPercentage ?? battle.destructionPercentage ?? battle.attacker?.destructionPercentage ?? 0,
+    duration: entry.duration ?? battle.duration ?? (typeof battle.battleTime === 'number' ? battle.battleTime : typeof entry.battleTime === 'number' ? entry.battleTime : 0),
+    lootedResources,
+    shareCode: entry.shareCode || entry.armyShareCode || '',
+    familyId: entry.familyId || '',
+  };
+}
+
+export async function getPlayerCwlHistory(playerTag, fresh = false) {
   if (!playerTag) {
     return { data: [] };
   }
@@ -93,8 +162,7 @@ export async function getPlayerCwlHistory(playerTag) {
         headers: {
           Accept: 'application/json',
         },
-        // Revalidate CWL history every 5 minutes (300s)
-        next: { revalidate: 300 },
+        ...fetchCacheOptions(fresh, 300),
       }
     );
 

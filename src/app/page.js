@@ -67,7 +67,7 @@ function HomeContent() {
     enrichSavedPlayer,
   } = useSavedPlayers();
 
-  const searchPlayer = useCallback(async (targetTag) => {
+  const searchPlayer = useCallback(async (targetTag, { refresh = false } = {}) => {
     const cleanTag = (targetTag || '').trim();
     if (!cleanTag) return;
 
@@ -76,43 +76,48 @@ function HomeContent() {
     setTag(cleanTag);
     setLoading(true);
     setError(null);
-    setBattles(null);
     setBattleError(null);
     setBattleLoading(true);
-    setCwl(null);
     setCwlError(null);
     setCwlLoading(true);
+    if (!refresh) {
+      setBattles(null);
+      setCwl(null);
+    }
 
-    const [playerResult, battleResult, cwlResult] = await Promise.all([
-      getPlayerData(cleanTag),
-      getPlayerBattleHistory(cleanTag),
-      getPlayerCwlHistory(cleanTag),
+    const settledResults = await Promise.allSettled([
+      getPlayerData(cleanTag, refresh),
+      getPlayerBattleHistory(cleanTag, refresh),
+      getPlayerCwlHistory(cleanTag, refresh),
     ]);
 
     if (requestId !== searchRequestId.current) return;
 
+    const [playerOutcome, battleOutcome, cwlOutcome] = settledResults;
+    const playerResult = playerOutcome.status === 'fulfilled' ? playerOutcome.value : { error: playerOutcome.reason?.message || 'Failed to refresh player profile' };
+    const battleResult = battleOutcome.status === 'fulfilled' ? battleOutcome.value : { error: battleOutcome.reason?.message || 'Failed to refresh recent attacks' };
+    const cwlResult = cwlOutcome.status === 'fulfilled' ? cwlOutcome.value : { error: cwlOutcome.reason?.message || 'Failed to refresh CWL history' };
+
     if (playerResult.error) {
       setError(playerResult.error);
-      setPlayer(null);
-      setBattles(null);
-      setCwl(null);
+      if (!refresh) setPlayer(null);
     } else {
       setPlayer(playerResult.data);
       enrichSavedPlayer(playerResult.data);
+    }
 
-      if (battleResult.error) {
-        setBattleError(battleResult.error);
-        setBattles([]);
-      } else {
-        setBattles(battleResult.data || []);
-      }
+    if (battleResult.error) {
+      setBattleError(battleResult.error);
+      if (!refresh) setBattles([]);
+    } else {
+      setBattles(battleResult.data || []);
+    }
 
-      if (cwlResult.error) {
-        setCwlError(cwlResult.error);
-        setCwl([]);
-      } else {
-        setCwl(cwlResult.data || []);
-      }
+    if (cwlResult.error) {
+      setCwlError(cwlResult.error);
+      if (!refresh) setCwl([]);
+    } else {
+      setCwl(cwlResult.data || []);
     }
 
     setLoading(false);
@@ -357,6 +362,16 @@ function HomeContent() {
                   />
                   <span>{player.trophies}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => searchPlayer(player.tag, { refresh: true })}
+                  disabled={loading}
+                  title="Refresh profile, hero and equipment levels, and recent attacks"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-300 px-3 text-xs font-medium text-neutral-700 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                >
+                  <svg className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.6 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.4-3" /></svg>
+                  {loading ? 'Refreshing…' : 'Refresh'}
+                </button>
               </div>
             </div>
 
@@ -489,6 +504,7 @@ function HomeContent() {
           {/* Active History View */}
           {activeTab === 'battles' ? (
             <BattleHistory
+              key={player.tag}
               battles={battles}
               loading={battleLoading}
               error={battleError}
