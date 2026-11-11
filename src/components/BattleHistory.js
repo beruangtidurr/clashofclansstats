@@ -2,6 +2,98 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
+import { getTroopImageUrl } from './TroopIcon';
+import itemNames from '../app/track/item-names.json';
+
+const superTroopNames = {
+  4000026: 'Super Barbarian',
+  4000027: 'Super Archer',
+  4000028: 'Super Wall Breaker',
+  4000029: 'Super Giant',
+  4000055: 'Sneaky Goblin',
+  4000056: 'Super Miner',
+  4000057: 'Rocket Balloon',
+  4000063: 'Inferno Dragon',
+  4000064: 'Super Valkyrie',
+  4000066: 'Super Witch',
+  4000076: 'Ice Hound',
+  4000080: 'Super Bowler',
+  4000081: 'Super Dragon',
+  4000083: 'Super Wizard',
+  4000084: 'Super Minion',
+  4000098: 'Super Hog Rider',
+  4000147: 'Super Yeti',
+};
+
+function decodeArmyShareCode(shareCode) {
+  if (typeof shareCode !== 'string') return [];
+  const payload = shareCode.includes('army=')
+    ? new URLSearchParams(shareCode.split('?').pop()).get('army') || ''
+    : shareCode;
+  const units = [];
+  for (const [, section, contents] of payload.matchAll(/([us])((?:\d+x\d+)(?:-\d+x\d+)*)/gi)) {
+    const type = section.toLowerCase() === 's' ? 'spell' : 'troop';
+    const baseId = type === 'spell' ? 26000000 : 4000000;
+    const entries = contents.matchAll(/(\d+)x(\d+)/g);
+    // Clash battle-log army codes encode quantity x troop ID (for example, 5x80 = five Super Bowlers).
+    for (const [, quantity, id] of entries) {
+      const dataId = baseId + Number(id);
+      const name = itemNames[`home:${dataId}`] || (type === 'troop' ? superTroopNames[dataId] : undefined);
+      if (name) units.push({ name, type, quantity: Number(quantity) });
+    }
+  }
+  return units;
+}
+
+function getArmyUnits(battle) {
+  const source = battle.army || battle.composition || battle;
+  const troops = source.troops || source.units || [];
+  const spells = source.spells || [];
+  const units = [
+    ...troops.map((unit) => ({ ...unit, type: unit.type === 'siege' ? 'siege' : 'troop', quantity: unit.quantity ?? unit.count ?? unit.amount ?? 1 })),
+    ...spells.map((unit) => ({ ...unit, type: 'spell', quantity: unit.quantity ?? unit.count ?? unit.amount ?? 1 })),
+  ].filter((unit) => unit.name);
+  return units.length ? units : decodeArmyShareCode(battle.shareCode || battle.armyShareCode);
+}
+
+function getArmyLabel(battle, units) {
+  const combatUnits = units.filter((unit) => unit.type !== 'spell' && unit.type !== 'siege');
+  const superTroopNamesSet = new Set(Object.values(superTroopNames));
+  const supportTroops = new Set(['Healer', 'Wall Breaker', 'Super Wall Breaker', 'Sneaky Goblin', 'Super Archer']);
+  const coreUnits = combatUnits.filter((unit) => !supportTroops.has(unit.name));
+  const signatureUnit = coreUnits.filter((unit) => superTroopNamesSet.has(unit.name)).sort((a, b) => b.quantity - a.quantity)[0]
+    || coreUnits.sort((a, b) => b.quantity - a.quantity)[0]
+    || combatUnits.sort((a, b) => b.quantity - a.quantity)[0];
+  return battle.armyName || battle.familyName || battle.family?.name || battle.army?.name || signatureUnit?.name || 'Army variant';
+}
+
+function groupArmyVariants(battles) {
+  const groups = new Map();
+  battles.forEach((battle) => {
+    if (battle.isAttack === false) return;
+    const units = getArmyUnits(battle);
+    const signature = units.length
+      ? units.map((unit) => `${unit.type}:${unit.name}:${unit.quantity}`).sort().join('|')
+      : battle.familyId || battle.shareCode || '';
+    if (!signature) return;
+    const key = `${battle.battleMode || 'Unknown'}:${signature}`;
+    if (!groups.has(key)) groups.set(key, { key, label: getArmyLabel(battle, units), units, battles: [], shareCode: battle.shareCode || '' });
+    groups.get(key).battles.push(battle);
+  });
+  return [...groups.values()].sort((a, b) => b.battles.length - a.battles.length);
+}
+
+function ArmyComposition({ units }) {
+  if (!units.length) return <p className="text-xs text-neutral-500 dark:text-neutral-400">Composition details aren’t available for these attacks.</p>;
+  return <div className="flex flex-wrap gap-1.5">{units.map((unit, index) => {
+    const image = getTroopImageUrl(unit.name, unit.type === 'spell' ? 'spell' : unit.type);
+    return <div key={`${unit.type}-${unit.name}-${index}`} title={`${unit.quantity} × ${unit.name}`} className="relative h-9 w-9 overflow-hidden rounded-md bg-neutral-800">
+      <Image src={image} alt={unit.name} fill sizes="36px" className="object-contain" unoptimized />
+      <span className="absolute bottom-0 right-0 rounded-tl bg-black/75 px-1 text-[9px] font-semibold text-white">{unit.quantity}×</span>
+    </div>;
+  })}</div>;
+}
 
 function parseBattleDate(value) {
   if (!value) return null;
@@ -202,6 +294,7 @@ export default function BattleHistory({ battles, loading, error }) {
   }
 
   const visibleBattles = filteredBattles.slice(0, visibleCount);
+  const armyVariants = groupArmyVariants(filteredBattles);
 
   return (
     <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 p-5 sm:p-6 bg-white dark:bg-neutral-900/40">
@@ -271,6 +364,37 @@ export default function BattleHistory({ battles, loading, error }) {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedDirection !== 'defense' && armyVariants.length > 0 && (
+        <section className="mb-5" aria-labelledby="army-variants-heading">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h4 id="army-variants-heading" className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Attack army variants</h4>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">{armyVariants.length} {armyVariants.length === 1 ? 'variant' : 'variants'}</span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {armyVariants.slice(0, 6).map((variant, index) => {
+              const count = variant.battles.length;
+              const avgStars = (variant.battles.reduce((sum, battle) => sum + (battle.stars ?? 0), 0) / count).toFixed(1);
+              const avgDestruction = Math.round(variant.battles.reduce((sum, battle) => sum + (battle.destructionPercentage ?? 0), 0) / count);
+              return <article key={variant.key} className="rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-3 dark:border-neutral-800 dark:bg-neutral-900/40">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div>
+                    {index === 0 && <span className="mb-1 inline-block rounded bg-amber-300 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950">Most used</span>}
+                    <h5 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{variant.label}</h5>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{count} {count === 1 ? 'attack' : 'attacks'}</p>
+                  </div>
+                  {variant.shareCode && <a href={`https://link.clashofclans.com/en?action=CopyArmy&army=${encodeURIComponent(variant.shareCode)}`} target="_blank" rel="noreferrer" aria-label={`Open ${variant.label} in Clash of Clans`} title="Open army in Clash of Clans" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white"><span aria-hidden="true">↗</span></a>}
+                </div>
+                <ArmyComposition units={variant.units} />
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-200 pt-2 text-xs dark:border-neutral-800">
+                  <span className="text-amber-500">★★★ <span className="text-neutral-500 dark:text-neutral-400">×{variant.battles.filter((battle) => battle.stars === 3).length}</span></span>
+                  <span className="text-neutral-600 dark:text-neutral-300">Avg. {avgStars} ★ <span className="ml-1 text-neutral-500 dark:text-neutral-400">{avgDestruction}%</span></span>
+                </div>
+              </article>;
+            })}
+          </div>
+        </section>
       )}
 
       {/* Battle Cards List */}

@@ -50,6 +50,11 @@ export async function getPlayerBattleHistory(playerTag, fresh = false) {
   const formattedTag = decodeURIComponent(playerTag).trim().toUpperCase().replace(/^#/, '');
   const encodedTag = `%23${formattedTag}`;
 
+  // The official battle log contains the armyShareCode needed to reconstruct
+  // troop and spell compositions. Prefer it; ClashKing history remains a fallback.
+  const officialHistory = await getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
+  if (officialHistory.data.length) return officialHistory;
+
   try {
     const response = await fetch(
       `https://api.clashk.ing/v2/player/${encodedTag}/battlelog/history`,
@@ -63,18 +68,19 @@ export async function getPlayerBattleHistory(playerTag, fresh = false) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const fallback = await getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
-      if (fallback.data.length) return fallback;
       return { error: errorData.message || `Error ${response.status}: Failed to fetch battle history`, data: [] };
     }
 
     const data = await response.json();
     const history = Array.isArray(data.items) ? data.items : [];
-    if (history.length) return { data: history.map((entry) => ({ ...entry, isAttack: getBattleDirection(entry, formattedTag) })) };
-    return getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
+    if (history.length) return { data: history.map((entry) => ({
+      ...entry,
+      isAttack: getBattleDirection(entry, formattedTag),
+      shareCode: entry.shareCode || entry.armyShareCode || '',
+    })) };
+    return officialHistory;
   } catch (err) {
-    const fallback = await getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
-    return fallback.data.length ? fallback : {
+    return officialHistory.data.length ? officialHistory : {
       error: err.message || 'Failed to fetch battle history',
       data: [],
     };
