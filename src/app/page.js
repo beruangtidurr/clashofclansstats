@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory } from './actions';
+import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory, getCurrentClanWar } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
 import HeroIcon from '@/components/HeroIcon';
@@ -53,9 +53,13 @@ function HomeContent() {
   const [cwl, setCwl] = useState(null);
   const [cwlLoading, setCwlLoading] = useState(false);
   const [cwlError, setCwlError] = useState(null);
+  const [war, setWar] = useState(null);
+  const [warLoading, setWarLoading] = useState(false);
+  const [warError, setWarError] = useState(null);
   const [activeTab, setActiveTab] = useState('battles');
   const [copiedTag, setCopiedTag] = useState(false);
   const searchRequestId = useRef(0);
+  const warRequestId = useRef(0);
 
   const {
     savedPlayers,
@@ -85,10 +89,12 @@ function HomeContent() {
       setCwl(null);
     }
 
+    const savedProfile = isPlayerSaved(cleanTag);
     const settledResults = await Promise.allSettled([
       getPlayerData(cleanTag, refresh),
       getPlayerBattleHistory(cleanTag, refresh),
       getPlayerCwlHistory(cleanTag, refresh),
+      savedProfile ? getCurrentClanWar(player?.clan?.tag || '', refresh) : Promise.resolve({ data: null }),
     ]);
 
     if (requestId !== searchRequestId.current) return;
@@ -120,10 +126,31 @@ function HomeContent() {
       setCwl(cwlResult.data || []);
     }
 
+    if (savedProfile && playerResult.data?.clan?.tag) {
+      const warResult = await getCurrentClanWar(playerResult.data.clan.tag, refresh);
+      const currentWar = warResult.data && ['preparation', 'inWar'].includes(warResult.data.state) ? warResult.data : null;
+      setWar(currentWar);
+      setWarError(warResult.error || null);
+    } else {
+      setWar(null);
+      setWarError(null);
+    }
+
     setLoading(false);
     setBattleLoading(false);
     setCwlLoading(false);
-  }, [enrichSavedPlayer]);
+  }, [enrichSavedPlayer, isPlayerSaved, player?.clan?.tag]);
+
+  const refreshWar = useCallback(async () => {
+    if (!player?.clan?.tag || !isPlayerSaved(player.tag)) return;
+    const requestId = ++warRequestId.current;
+    setWarLoading(true);
+    const result = await getCurrentClanWar(player.clan.tag, true);
+    if (requestId !== warRequestId.current) return;
+    setWarError(result.error || null);
+    setWar(result.data && ['preparation', 'inWar'].includes(result.data.state) ? result.data : null);
+    setWarLoading(false);
+  }, [isPlayerSaved, player]);
 
   useEffect(() => {
     if (queryTag) {
@@ -154,6 +181,10 @@ function HomeContent() {
     setCwl(null);
     setCwlError(null);
     setCwlLoading(false);
+    warRequestId.current += 1;
+    setWar(null);
+    setWarError(null);
+    setWarLoading(false);
     setShowSavedPlayers(true);
   };
 
@@ -516,6 +547,18 @@ function HomeContent() {
               error={cwlError}
             />
           )}
+        </>
+      )}
+      {player && isPlayerSaved(player.tag) && war && (
+        <>
+          <button
+            type="button"
+            onClick={() => router.push(`/clan/${encodeURIComponent(war.clan?.tag || player.clan.tag)}/currentwar`)}
+            className="group fixed bottom-5 left-1/2 z-40 inline-flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-neutral-950 shadow-lg shadow-amber-950/20 transition-[transform,box-shadow,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:scale-[1.03] hover:bg-amber-300 hover:shadow-xl hover:shadow-amber-950/25 active:translate-y-0 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 motion-reduce:transition-none dark:bg-amber-400 dark:text-neutral-950 dark:hover:bg-amber-300"
+          >
+            <svg className="h-5 w-5 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:rotate-[-8deg] group-hover:scale-110 motion-reduce:transition-none" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.2 2.8 2.8 6.2l5 5-5 5 3.4 3.4 5-5 5 5 3.4-3.4-5-5 5-5-3.4-3.4-5 5-5-5Z" /><path d="m18 2 4 4-4 4-4-4z" opacity=".65" /></svg>
+            View war
+          </button>
         </>
       )}
     </main>

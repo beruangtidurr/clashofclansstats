@@ -273,3 +273,56 @@ export async function getClanMembers(clanTag) {
     };
   }
 }
+
+export async function getCurrentClanWar(clanTag, fresh = false) {
+  const token = getApiToken();
+  if (!token) return { error: 'API token missing in environment variables' };
+  if (!clanTag) return { error: 'Clan tag is required' };
+
+  const formattedTag = decodeURIComponent(clanTag).trim().toUpperCase().replace(/^#/, '');
+  const encodedTag = `%23${formattedTag}`;
+
+  try {
+    const response = await fetch(
+      `https://cocproxy.royaleapi.dev/v1/clans/${encodedTag}/currentwar`,
+      {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        ...fetchCacheOptions(fresh, 60),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { error: errorData.message || `Error ${response.status}: Failed to fetch current war` };
+    }
+
+    return { data: await response.json() };
+  } catch (err) {
+    return { error: err.message || 'Failed to fetch current war' };
+  }
+}
+
+export async function enrichWarMemberTownHalls(war, fresh = false) {
+  if (!war) return war;
+  const teams = [war.clan, war.opponent].filter(Boolean);
+  const members = teams.flatMap((team) => team.members || []);
+  const needsLookup = members.filter((member) => member.tag && !member.townhallLevel && !member.townHallLevel);
+  const levels = new Map();
+
+  await Promise.all(needsLookup.map(async (member) => {
+    try {
+      const tag = decodeURIComponent(String(member.tag)).trim().replace(/^%23/i, '').replace(/^#/, '').toUpperCase();
+      const result = await getPlayerData(tag, fresh);
+      const level = result.data?.townHallLevel ?? result.data?.townhallLevel;
+      if (level) levels.set(tag.replace(/^#/, ''), level);
+    } catch {
+      // Keep the roster available even if an individual profile lookup fails.
+    }
+  }));
+
+  return {
+    ...war,
+    clan: war.clan ? { ...war.clan, members: (war.clan.members || []).map((member) => ({ ...member, townHallLevel: member.townhallLevel || member.townHallLevel || levels.get(String(member.tag || '').toUpperCase().replace(/^#/, '')) })) } : war.clan,
+    opponent: war.opponent ? { ...war.opponent, members: (war.opponent.members || []).map((member) => ({ ...member, townHallLevel: member.townhallLevel || member.townHallLevel || levels.get(String(member.tag || '').toUpperCase().replace(/^#/, '')) })) } : war.opponent,
+  };
+}
