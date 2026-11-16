@@ -4,7 +4,8 @@ import Image from 'next/image';
 export default function TownHallImage({ level, size = 'md' }) {
   if (!level) return null;
 
-  const imageUrl = `https://assets.clashk.ing/buildings/home-village/town_hall/level_${level}.webp`;
+  const imageLevel = Math.min(19, Math.max(1, Number(level)));
+  const imageUrl = `https://assets.clashk.ing/buildings/home-village/town_hall/level_${imageLevel}.webp`;
   const sizeClasses =
     size === 'xs'
       ? 'w-7 h-7 sm:w-8 sm:h-8'
@@ -17,7 +18,7 @@ export default function TownHallImage({ level, size = 'md' }) {
     <div className={`relative ${sizeClasses} shrink-0`}>
       <Image
         src={imageUrl}
-        alt={`Town Hall Level ${level}`}
+        alt={`Town Hall Level ${imageLevel}`}
         fill
         sizes={`${pixelSize}px`}
         className="object-contain"

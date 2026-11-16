@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import TroopIcon from './TroopIcon';
+import TroopIcon, { getTroopImageUrl } from './TroopIcon';
 import TOWNHALL_MAX_LEVELS from '@/app/track/townhall-max-levels.json';
 
 const PET_ROSTER = [
@@ -32,7 +32,7 @@ const TROOP_ROSTER = [
 const SPELL_ROSTER = [
   'Lightning Spell', 'Healing Spell', 'Rage Spell', 'Jump Spell', 'Freeze Spell', 'Clone Spell',
   'Invisibility Spell', 'Recall Spell', 'Overgrowth Spell', 'Revive Spell', 'Earthquake Spell',
-  'Poison Spell', 'Haste Spell', 'Skeleton Spell', 'Bat Spell', 'Angry Spell',
+  'Poison Spell', 'Haste Spell', 'Skeleton Spell', 'Bat Spell', 'Angry Spell', 'Heroic Spell',
   'Ice Block Spell', 'Totem Spell',
 ];
 
@@ -47,6 +47,21 @@ const SIEGE_NAMES = new Set([
   'Troop Launcher',
   'Sky Wagon',
 ]);
+
+const SQUAD_ROSTER = [
+  { name: 'Barch Squad', imageName: 'barch_squad', unlockTownHall: 8, composition: [['Barbarian', 15], ['Archer', 15]], ability: 'Splash Resistance' },
+  { name: 'Giant Wizard Squad', imageName: 'giant_wizard_squad', unlockTownHall: 9, composition: [['Giant', 3], ['Wizard', 5]], ability: 'Splash Resistance' },
+  { name: 'Wall Breaker Squad', imageName: 'wall_breaker_squad', unlockTownHall: 10, composition: [['Wall Breaker', 5]], ability: 'Stealthy Start' },
+  { name: 'Minion Squad', imageName: 'minion_squad', unlockTownHall: 11, composition: [['Minion', 8]], ability: 'Splash Resistance' },
+  { name: 'Balloon Squad', imageName: 'balloon_squad', unlockTownHall: 12, composition: [['Balloon', 4]], ability: 'Trap Sense' },
+  { name: 'Golem Witch Squad', imageName: 'golem_witch_squad', unlockTownHall: 13, composition: [['Golem', 1], ['Witch', 4]], ability: 'Splash Resistance' },
+  { name: 'Hog Rider Squad', imageName: 'hog_rider_squad', unlockTownHall: 14, composition: [['Hog Rider', 12]], ability: 'Trap Sense' },
+  { name: 'Miner Squad', imageName: 'miner_squad', unlockTownHall: 15, composition: [['Miner', 10]], ability: 'Trap Sense' },
+  { name: 'Healer Squad', imageName: 'healer_squad', unlockTownHall: 16, composition: [['Balloon', 1], ['Healer', 5]], ability: 'Shielded Start' },
+  { name: 'P.E.K.K.A Titan Squad', imageName: 'pekka_titan_squad', unlockTownHall: 17, composition: [['P.E.K.K.A', 1], ['Electro Titan', 1]], ability: 'Focus Attack' },
+  { name: 'Dragons Squad', imageName: 'dragons_squad', unlockTownHall: 18, composition: [['Dragon', 2], ['Dragon Rider', 2]], ability: 'Shielded Start' },
+  { name: 'Baby Dragon Squad', imageName: 'baby_dragon_squad', unlockTownHall: 19, composition: [['Baby Dragon', 3]], ability: 'Tantrum' },
+];
 
 const HOME_UNIT_NAME_IDS = {
   'L.A.S.S.I': 73000000, 'Mighty Yak': 73000001, 'Electro Owl': 73000002,
@@ -68,15 +83,20 @@ const HOME_UNIT_NAME_IDS = {
   'Revive Spell': 26000098, 'Earthquake Spell': 26000010, 'Poison Spell': 26000009,
   'Haste Spell': 26000011, 'Skeleton Spell': 26000017, 'Bat Spell': 26000028,
   'Angry Spell': 26000123, 'Ice Block Spell': 26000109, 'Totem Spell': 26000120,
+  'Heroic Spell': 26000151,
 };
 
-export default function TroopLevels({ troops = [], spells = [], townHallLevel = 0 }) {
+export default function TroopLevels({ troops = [], spells = [], squads = [], townHallLevel = 0 }) {
+  const troopLevels = useMemo(() => new Map(
+    (troops || []).filter((troop) => troop.village === 'home' || !troop.village)
+      .map((troop) => [troop.name, Number(troop.level) || 0])
+  ), [troops]);
   const maxLevelAtTownHall = (item) => {
     if (!townHallLevel) return null;
     const dataId = Number(item.dataId || item.item?.id || HOME_UNIT_NAME_IDS[item.name]);
     if (!dataId) return null;
     const caps = TOWNHALL_MAX_LEVELS[`home:${dataId}`];
-    return caps?.[Math.min(17, Math.max(0, Number(townHallLevel) - 1))] || null;
+    return caps?.[Math.min(18, Math.max(0, Number(townHallLevel) - 1))] || null;
   };
   const overallMaxLevel = (item) => {
     if (item.maxLevel) return item.maxLevel;
@@ -194,28 +214,70 @@ export default function TroopLevels({ troops = [], spells = [], townHallLevel = 
           const items = section.items;
 
           return (
-            <section key={section.id}>
-              <div className="mb-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                  {section.label}
-                </h3>
-              </div>
-              <div className="flex flex-wrap gap-2 sm:gap-2.5">
-                {items.map((item) => (
-                  <TroopIcon
-                    key={`${item.itemType}-${item.name}`}
-                    name={item.name}
-                    level={item.level}
-                    maxLevel={overallMaxLevel(item)}
-                    townHallMaxLevel={maxLevelAtTownHall(item)}
-                    townHallLevel={townHallLevel}
-                    type={item.itemType}
-                    isActiveSuperTroop={item.isActiveSuperTroop}
-                    isLocked={item.isLocked}
-                  />
-                ))}
-              </div>
-            </section>
+            <div key={section.id}>
+              <section>
+                <div className="mb-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                    {section.label}
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2 sm:gap-2.5">
+                  {items.map((item) => (
+                    <TroopIcon
+                      key={`${item.itemType}-${item.name}`}
+                      name={item.name}
+                      level={item.level}
+                      maxLevel={overallMaxLevel(item)}
+                      townHallMaxLevel={maxLevelAtTownHall(item)}
+                      townHallLevel={townHallLevel}
+                      type={item.itemType}
+                      isActiveSuperTroop={item.isActiveSuperTroop}
+                      isLocked={item.isLocked}
+                    />
+                  ))}
+                </div>
+              </section>
+              {section.id === 'troops' && (
+                <section className="mt-4">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Squads</h3>
+                  <div className="flex flex-wrap gap-2 sm:gap-2.5">
+                    {SQUAD_ROSTER.map((squad) => {
+                      const unlocked = Number(townHallLevel) >= squad.unlockTownHall;
+                      const [leadTroop] = squad.composition[0];
+                      const composition = squad.composition.map(([name, count]) => `${name} ×${count}`).join(' · ');
+                      const squadData = (squads || []).find((entry) =>
+                        entry.name?.toLowerCase() === squad.name.toLowerCase()
+                        || entry.id === squad.imageName
+                        || entry.dataId === squad.imageName
+                      );
+                      const squadLevel = Number(squadData?.level) || (unlocked && Number(townHallLevel) < 19 ? 1 : null);
+                      return (
+                        <TroopIcon
+                          key={squad.name}
+                          name={squad.name}
+                          level={squadLevel || 0}
+                          maxLevel={3}
+                          showMaxLevel
+                          levelDisplay={squadLevel || (unlocked ? '?' : undefined)}
+                          levelIsKnown={Boolean(squadLevel)}
+                          type="troop"
+                          imageUrl={getTroopImageUrl(squad.imageName, 'troop')}
+                          isLocked={!unlocked}
+                          tooltipTitle={squad.name}
+                          tooltipLevelLabel={squadLevel ? `Squad level ${squadLevel}` : 'Squad level unavailable'}
+                          tooltipDetails={[
+                            unlocked ? `Unlocks at Town Hall ${squad.unlockTownHall}` : `Locked until Town Hall ${squad.unlockTownHall}`,
+                            composition,
+                            `Lead troop: ${leadTroop} level ${troopLevels.get(leadTroop) || 1}`,
+                            `Level 2 ability: ${squad.ability}`,
+                          ]}
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+            </div>
           );
         })}
       </div>

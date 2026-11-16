@@ -31,6 +31,13 @@ export default function TroopIcon({
   type = 'troop',
   isActiveSuperTroop = false,
   isLocked = false,
+  tooltipTitle,
+  tooltipLevelLabel,
+  tooltipDetails = [],
+  imageUrl: customImageUrl,
+  levelDisplay,
+  levelIsKnown = true,
+  showMaxLevel = false,
 }) {
   const [imageError, setImageError] = useState(false);
   const [prevKey, setPrevKey] = useState(`${type}-${name}`);
@@ -42,9 +49,9 @@ export default function TroopIcon({
 
   if (!name) return null;
 
-  const imageUrl = getTroopImageUrl(name, type);
+  const imageUrl = customImageUrl || getTroopImageUrl(name, type);
   const isMax = maxLevel && level >= maxLevel;
-  const isUnlocked = Number(level) > 0;
+  const isUnlocked = Number(level) > 0 || !levelIsKnown;
   const isLockedUnit = isLocked || ((type === 'pet' || type === 'troop' || type === 'spell' || type === 'siege') && !isUnlocked);
 
   return (
@@ -57,13 +64,15 @@ export default function TroopIcon({
         ) : (
           <span className={`text-[10px] font-bold uppercase ${isLockedUnit ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-600 dark:text-neutral-200'}`}>{name.slice(0, 2)}</span>
         )}
-        <span className={`absolute bottom-0.5 left-0.5 rounded px-0.5 py-px font-sans text-[7px] font-bold leading-none sm:text-[8px] ${isLockedUnit ? 'bg-neutral-500/80 text-neutral-100' : 'bg-black/75 text-white'}`}>{isLockedUnit ? '—' : level}</span>
+        <span className={`absolute bottom-0.5 left-0.5 rounded px-0.5 py-px font-sans text-[7px] font-bold leading-none sm:text-[8px] ${isLockedUnit ? 'bg-neutral-500/80 text-neutral-100' : 'bg-black/75 text-white'}`}>{isLockedUnit ? '—' : (levelDisplay ?? level)}</span>
         {isActiveSuperTroop && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-1 ring-black/40" title="Active super troop" />}
       </div>
       <div className="absolute bottom-full left-1/2 z-30 mb-1.5 hidden -translate-x-1/2 flex-col items-center whitespace-nowrap rounded-md bg-white px-2.5 py-1 text-xs leading-[17px] text-neutral-800 shadow-md group-hover:flex dark:bg-neutral-100">
-        <span>{name}</span>
-        <span className="font-sans">{isLockedUnit ? 'Locked' : `Level ${level}`}</span>
+        <span>{tooltipTitle || name}</span>
+        <span className="font-sans">{isLockedUnit ? 'Locked' : (tooltipLevelLabel || `Level ${level}`)}</span>
         {!isLockedUnit && townHallMaxLevel && <span className="font-sans">Max. {maxLevel || townHallMaxLevel} ({townHallMaxLevel})</span>}
+        {!isLockedUnit && showMaxLevel && maxLevel && <span className="font-sans">Max level {maxLevel}</span>}
+        {tooltipDetails.map((detail) => <span key={detail}>{detail}</span>)}
       </div>
     </div>
   );

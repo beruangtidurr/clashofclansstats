@@ -28,7 +28,7 @@ const HERO_DATA_IDS = {
 function heroMaxLevelAtTownHall(hero, townHallLevel) {
   const dataId = hero.dataId || hero.item?.id || HERO_DATA_IDS[hero.name];
   const caps = TOWNHALL_MAX_LEVELS[`home:${dataId}`];
-  return caps?.[Math.min(17, Math.max(0, Number(townHallLevel) - 1))] || null;
+  return caps?.[Math.min(18, Math.max(0, Number(townHallLevel) - 1))] || null;
 }
 
 function heroOverallMaxLevel(hero) {
@@ -491,6 +491,7 @@ function HomeContent() {
             <TroopLevels
               troops={player.troops}
               spells={player.spells}
+              squads={player.squads}
               townHallLevel={player.townHallLevel}
             />
           </div>

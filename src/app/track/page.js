@@ -34,8 +34,8 @@ const SORT_OPTIONS = [
 
 function buildingGroup(item) {
   const name = item.name.toLowerCase();
-  if (/army camp|barracks|laboratory|clan castle|spell factory|workshop|blacksmith|pet house|hero hall|crafting station/.test(name)) return 'Army';
-  if (/wall|trap|cannon|tower|mortar|artillery|defense|defence|air sweeper|scattershot|monolith|firespitter|eagle|revenge|ricochet|multi-archer|multi-gear/.test(name)) return 'Defenses';
+  if (/army camp|barracks|laboratory|clan castle|spell factory|workshop|blacksmith|pet house|hero hall|crafting station|guardian shrine/.test(name)) return 'Army';
+  if (/wall|trap|cannon|tower|mortar|artillery|defense|defence|air sweeper|scattershot|monolith|firespitter|eagle|revenge|ricochet|multi-archer|multi-gear|spiky|firecracker/.test(name)) return 'Defenses';
   if (/collector|storage|mine|drill/.test(name)) return 'Resources';
   return 'Other';
 }
@@ -79,7 +79,7 @@ function maxLevelAtHall(item, hallLevel, village = 'home') {
   const id = item.dataId;
   const key = `${village}:${id}`;
   const caps = TOWNHALL_MAX_LEVELS[key];
-  const limit = village === 'builder' ? 10 : 18;
+  const limit = village === 'builder' ? 10 : 19;
   const level = Number(hallLevel);
   if (!caps || !level) return Number(item.maxLevel) || 0;
   return caps[Math.max(0, Math.min(limit - 1, level - 1))] || 0;
