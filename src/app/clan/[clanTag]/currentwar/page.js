@@ -15,7 +15,7 @@ export default async function CurrentWarPage({ params }) {
   const displayTag = decodeURIComponent(clanTag).trim();
 
   return (
-    <main className="mx-auto min-h-[calc(100vh-3.5rem)] w-full max-w-none bg-[#191C1F] px-4 py-8 font-sans antialiased text-neutral-100 sm:px-6 sm:py-10">
+    <main className="mx-auto min-h-[calc(100vh-3.5rem)] w-full max-w-none bg-[#1a1b20] px-4 py-8 font-sans antialiased text-neutral-100 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-5xl">
       <Link href={`/clan/${encodeURIComponent(displayTag)}`} className="mb-5 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-400 hover:text-white">
         <span aria-hidden="true">←</span> Clan details
@@ -29,7 +29,7 @@ export default async function CurrentWarPage({ params }) {
       ) : war ? (
         <PlayerWarView war={war} playerTag={null} loading={false} error={null} onRefresh={undefined} />
       ) : (
-        <div className="rounded-2xl border border-[#303438] bg-[#191C1F] p-8 text-center">
+        <div className="rounded-2xl border border-[#303438] bg-[#1a1b20] p-8 text-center">
           <p className="font-semibold text-neutral-100">No active regular war</p>
           <p className="mt-1 text-sm text-neutral-500">This clan is not currently in preparation or battle day.</p>
         </div>

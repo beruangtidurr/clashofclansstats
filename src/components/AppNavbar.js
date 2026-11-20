@@ -51,7 +51,7 @@ export default function AppNavbar() {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-[60] border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+    <header className="sticky top-0 z-[60] border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-[#1a1b20]">
       <div className="flex h-14 w-full items-center gap-2 px-2 sm:px-3">
         <button type="button" onClick={() => setOpen((value) => !value)} aria-label={open ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={open} aria-controls="app-navigation" className="relative z-[70] grid h-10 w-10 shrink-0 place-items-center rounded-lg text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white">
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">

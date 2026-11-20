@@ -50,46 +50,12 @@ export async function getPlayerBattleHistory(playerTag, fresh = false) {
   const formattedTag = decodeURIComponent(playerTag).trim().toUpperCase().replace(/^#/, '');
   const encodedTag = `%23${formattedTag}`;
 
-  // The official battle log contains the armyShareCode needed to reconstruct
-  // troop and spell compositions. Prefer it; ClashKing history remains a fallback.
-  const officialHistory = await getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
-  if (officialHistory.data.length) return officialHistory;
-
-  try {
-    const response = await fetch(
-      `https://api.clashk.ing/v2/player/${encodedTag}/battlelog/history`,
-      {
-        headers: {
-          Accept: 'application/json',
-        },
-        ...fetchCacheOptions(fresh, 120),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return { error: errorData.message || `Error ${response.status}: Failed to fetch battle history`, data: [] };
-    }
-
-    const data = await response.json();
-    const history = Array.isArray(data.items) ? data.items : [];
-    if (history.length) return { data: history.map((entry) => ({
-      ...entry,
-      isAttack: getBattleDirection(entry, formattedTag),
-      shareCode: entry.shareCode || entry.armyShareCode || '',
-    })) };
-    return officialHistory;
-  } catch (err) {
-    return officialHistory.data.length ? officialHistory : {
-      error: err.message || 'Failed to fetch battle history',
-      data: [],
-    };
-  }
+  return getOfficialPlayerBattleLog(encodedTag, formattedTag, fresh);
 }
 
 async function getOfficialPlayerBattleLog(encodedTag, playerTag, fresh = false) {
   const token = getApiToken();
-  if (!token) return { data: [] };
+  if (!token) return { error: 'API token missing in environment variables', data: [] };
 
   try {
     const response = await fetch(
@@ -103,12 +69,18 @@ async function getOfficialPlayerBattleLog(encodedTag, playerTag, fresh = false) 
       }
     );
 
-    if (!response.ok) return { data: [] };
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        error: errorData.message || `Error ${response.status}: Failed to fetch battle history`,
+        data: [],
+      };
+    }
     const payload = await response.json();
     const entries = Array.isArray(payload.items) ? payload.items : [];
     return { data: entries.map((entry) => normalizeOfficialBattle(entry, playerTag)).filter(Boolean) };
-  } catch {
-    return { data: [] };
+  } catch (err) {
+    return { error: err.message || 'Failed to fetch battle history', data: [] };
   }
 }
 
@@ -142,6 +114,9 @@ function normalizeOfficialBattle(entry, playerTag) {
   return {
     battleMode: entry.battleMode || entry.battleType || battle.type || battle.mode || 'Attack',
     isAttack: getBattleDirection(entry, playerTag),
+    opponentName: entry.opponent?.name || battle.opponent?.name || '',
+    opponentTag: entry.opponent?.tag || battle.opponent?.tag || '',
+    trophyChange: entry.trophyChange ?? battle.trophyChange ?? null,
     battleTime: entry.battleTimestamp || entry.timestamp || (typeof entry.battleTime === 'string' ? entry.battleTime : '') || battle.battleTimestamp || (typeof battle.battleTime === 'string' ? battle.battleTime : ''),
     stars: entry.stars ?? battle.stars ?? battle.attacker?.stars ?? 0,
     destructionPercentage: entry.destructionPercentage ?? battle.destructionPercentage ?? battle.attacker?.destructionPercentage ?? 0,

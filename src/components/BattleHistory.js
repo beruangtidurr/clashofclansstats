@@ -57,40 +57,13 @@ function getArmyUnits(battle) {
   return units.length ? units : decodeArmyShareCode(battle.shareCode || battle.armyShareCode);
 }
 
-function getArmyLabel(battle, units) {
-  const combatUnits = units.filter((unit) => unit.type !== 'spell' && unit.type !== 'siege');
-  const superTroopNamesSet = new Set(Object.values(superTroopNames));
-  const supportTroops = new Set(['Healer', 'Wall Breaker', 'Super Wall Breaker', 'Sneaky Goblin', 'Super Archer']);
-  const coreUnits = combatUnits.filter((unit) => !supportTroops.has(unit.name));
-  const signatureUnit = coreUnits.filter((unit) => superTroopNamesSet.has(unit.name)).sort((a, b) => b.quantity - a.quantity)[0]
-    || coreUnits.sort((a, b) => b.quantity - a.quantity)[0]
-    || combatUnits.sort((a, b) => b.quantity - a.quantity)[0];
-  return battle.armyName || battle.familyName || battle.family?.name || battle.army?.name || signatureUnit?.name || 'Army variant';
-}
-
-function groupArmyVariants(battles) {
-  const groups = new Map();
-  battles.forEach((battle) => {
-    if (battle.isAttack === false) return;
-    const units = getArmyUnits(battle);
-    const signature = units.length
-      ? units.map((unit) => `${unit.type}:${unit.name}:${unit.quantity}`).sort().join('|')
-      : battle.familyId || battle.shareCode || '';
-    if (!signature) return;
-    const key = `${battle.battleMode || 'Unknown'}:${signature}`;
-    if (!groups.has(key)) groups.set(key, { key, label: getArmyLabel(battle, units), units, battles: [], shareCode: battle.shareCode || '' });
-    groups.get(key).battles.push(battle);
-  });
-  return [...groups.values()].sort((a, b) => b.battles.length - a.battles.length);
-}
-
 function ArmyComposition({ units }) {
   if (!units.length) return <p className="text-xs text-neutral-500 dark:text-neutral-400">Composition details aren’t available for these attacks.</p>;
-  return <div className="flex flex-wrap gap-1.5">{units.map((unit, index) => {
+  return <div className="flex flex-wrap gap-0.5">{units.map((unit, index) => {
     const image = getTroopImageUrl(unit.name, unit.type === 'spell' ? 'spell' : unit.type);
-    return <div key={`${unit.type}-${unit.name}-${index}`} title={`${unit.quantity} × ${unit.name}`} className="relative h-9 w-9 overflow-hidden rounded-md bg-neutral-800">
+    return <div key={`${unit.type}-${unit.name}-${index}`} title={`${unit.quantity} × ${unit.name}`} className="relative h-9 w-9 overflow-hidden rounded-md bg-neutral-800/70">
       <Image src={image} alt={unit.name} fill sizes="36px" className="object-contain" unoptimized />
-      <span className="absolute bottom-0 right-0 rounded-tl bg-black/75 px-1 text-[9px] font-semibold text-white">{unit.quantity}×</span>
+      {unit.quantity > 1 && <span className="absolute bottom-0 right-0 rounded-tl bg-black/75 px-1 text-[9px] font-semibold text-white">{unit.quantity}×</span>}
     </div>;
   })}</div>;
 }
@@ -294,189 +267,78 @@ export default function BattleHistory({ battles, loading, error }) {
   }
 
   const visibleBattles = filteredBattles.slice(0, visibleCount);
-  const armyVariants = groupArmyVariants(filteredBattles);
+  const starCounts = [1, 2, 3].map((stars) => filteredBattles.filter((battle) => battle.stars === stars).length);
 
   return (
-    <div className="rounded-2xl border border-neutral-200/70 dark:border-neutral-800/70 p-5 sm:p-6 bg-white dark:bg-neutral-900/40">
-      {/* Header & Filter Row */}
-      <div className="mb-5 flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-start gap-x-3 gap-y-1">
-          <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-            {selectedDirection === 'defense' ? 'Recent Defenses' : selectedDirection === 'all' ? 'Recent Battles' : 'Recent Attacks'}
-          </h3>
-          <span className="text-xs text-neutral-500 dark:text-neutral-400">
-            {filteredBattles.length} {filteredBattles.length === 1 ? 'result' : 'results'}
-          </span>
+    <div className="mx-auto w-full max-w-xl">
+      <div className="mb-5 flex flex-col items-center gap-4">
+        <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Battle</h3>
+        <div className="flex items-center gap-8 border-b border-neutral-200 dark:border-neutral-800" role="tablist" aria-label="Battle history">
+          <button type="button" role="tab" aria-selected="true" className="border-b-2 border-amber-300 px-1 pb-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">Log</button>
+          <button type="button" role="tab" aria-selected="false" disabled className="border-b-2 border-transparent px-1 pb-2 text-sm text-neutral-400">Ranking</button>
+          <button type="button" role="tab" aria-selected="false" disabled className="border-b-2 border-transparent px-1 pb-2 text-sm text-neutral-400">History</button>
         </div>
-
-        {(hasDirectionData || modes.length > 1) && <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-start sm:gap-x-8 sm:gap-y-3 [&>div]:!ml-0">
-          {hasDirectionData && <div className="flex flex-col items-start gap-1.5"><span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Result</span><div role="group" aria-label="Battle direction" className="flex flex-wrap items-center gap-x-4 gap-y-2">{[
-            ['attack', `Attacks (${attackCount})`],
-            ['defense', `Defenses (${defenseCount})`],
-            ['all', 'All'],
-          ].map(([direction, label]) => <button key={direction} type="button" aria-pressed={selectedDirection === direction} onClick={() => { setSelectedDirection(direction); setVisibleCount(10); }} className={`whitespace-nowrap border-b-2 pb-1.5 text-xs transition-colors ${selectedDirection === direction ? 'border-neutral-900 font-semibold text-neutral-900 dark:border-neutral-100 dark:text-neutral-100' : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'}`}>{label}</button>)}</div></div>}
-
-          {modes.length > 1 && <div className="flex flex-col items-start gap-1.5"><span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Mode</span><div role="group" aria-label="Battle mode" className="flex flex-wrap items-center gap-x-4 gap-y-2"><button type="button" aria-pressed={selectedMode === 'all'} onClick={() => { setSelectedMode('all'); setVisibleCount(10); }} className={`border-b-2 pb-1.5 text-xs transition-colors cursor-pointer ${selectedMode === 'all' ? 'border-neutral-900 font-semibold text-neutral-900 dark:border-neutral-100 dark:text-neutral-100' : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'}`}>All</button>{modes.map((mode) => { const isSelected = selectedMode === mode; return <button key={mode} type="button" aria-pressed={isSelected} onClick={() => { setSelectedMode(mode); setVisibleCount(10); }} className={`border-b-2 pb-1.5 text-xs capitalize transition-colors cursor-pointer ${isSelected ? 'border-neutral-900 font-semibold text-neutral-900 dark:border-neutral-100 dark:text-neutral-100' : 'border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100'}`}>{mode}</button>; })}</div></div>}
-        </div>}
+        <div className="flex w-full justify-center gap-8">
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+            <span className="sr-only">Battle direction</span>
+            <select value={selectedDirection} onChange={(event) => { setSelectedDirection(event.target.value); setVisibleCount(10); }} className="cursor-pointer appearance-none bg-transparent py-1 pr-5 font-medium focus:outline-none">
+              <option value="attack">Attacks</option><option value="defense">Defenses</option><option value="all">All battles</option>
+            </select><span aria-hidden="true" className="pointer-events-none -ml-5 text-xs">▼</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+            <span className="sr-only">Battle mode</span>
+            <select value={selectedMode} onChange={(event) => { setSelectedMode(event.target.value); setVisibleCount(10); }} className="cursor-pointer appearance-none bg-transparent py-1 pr-5 font-medium capitalize focus:outline-none">
+              <option value="all">All modes</option>{modes.map((mode) => <option key={mode} value={mode} className="capitalize">{mode}</option>)}
+            </select><span aria-hidden="true" className="pointer-events-none -ml-5 text-xs">▼</span>
+          </label>
+        </div>
       </div>
 
-      {/* Aggregate Stats Summary Bar */}
-      {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-neutral-50/70 dark:bg-neutral-800/40 border border-neutral-200/50 dark:border-neutral-800/60 mb-5 text-center">
-          <div>
-            <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
-              {selectedDirection === 'defense' ? '3-Star Rate Conceded' : '3-Star Rate'}
-            </div>
-            <div className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
-              {stats.threeStarRate}%
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
-              {selectedDirection === 'defense' ? 'Avg Destruction Taken' : 'Avg Destruction'}
-            </div>
-            <div className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
-              {stats.avgDestruction}%
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
-              Avg Stars
-            </div>
-            <div className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
-              {stats.avgStars} ★
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider font-medium text-neutral-400">
-              Total Loot
-            </div>
-            <div className="text-xs font-semibold mt-1 text-neutral-600 dark:text-neutral-300 flex items-center justify-center gap-1.5 font-sans">
-              <span className="text-amber-600 dark:text-amber-400">{formatCompact(stats.totalGold)}</span>
-              <span className="text-neutral-300 dark:text-neutral-600">/</span>
-              <span className="text-pink-600 dark:text-pink-400">{formatCompact(stats.totalElixir)}</span>
-              {stats.totalDarkElixir > 0 && (
-                <>
-                  <span className="text-neutral-300 dark:text-neutral-600">/</span>
-                  <span className="text-indigo-500 dark:text-indigo-400">{formatCompact(stats.totalDarkElixir)}</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedDirection !== 'defense' && armyVariants.length > 0 && (
-        <section className="mb-5" aria-labelledby="army-variants-heading">
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h4 id="army-variants-heading" className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Attack army variants</h4>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">{armyVariants.length} {armyVariants.length === 1 ? 'variant' : 'variants'}</span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {armyVariants.slice(0, 6).map((variant, index) => {
-              const count = variant.battles.length;
-              const avgStars = (variant.battles.reduce((sum, battle) => sum + (battle.stars ?? 0), 0) / count).toFixed(1);
-              const avgDestruction = Math.round(variant.battles.reduce((sum, battle) => sum + (battle.destructionPercentage ?? 0), 0) / count);
-              return <article key={variant.key} className="rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-3 dark:border-neutral-800 dark:bg-neutral-900/40">
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div>
-                    {index === 0 && <span className="mb-1 inline-block rounded bg-amber-300 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950">Most used</span>}
-                    <h5 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{variant.label}</h5>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{count} {count === 1 ? 'attack' : 'attacks'}</p>
-                  </div>
-                  {variant.shareCode && <a href={`https://link.clashofclans.com/en?action=CopyArmy&army=${encodeURIComponent(variant.shareCode)}`} target="_blank" rel="noreferrer" aria-label={`Open ${variant.label} in Clash of Clans`} title="Open army in Clash of Clans" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white"><span aria-hidden="true">↗</span></a>}
-                </div>
-                <ArmyComposition units={variant.units} />
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-200 pt-2 text-xs dark:border-neutral-800">
-                  <span className="text-amber-500">★★★ <span className="text-neutral-500 dark:text-neutral-400">×{variant.battles.filter((battle) => battle.stars === 3).length}</span></span>
-                  <span className="text-neutral-600 dark:text-neutral-300">Avg. {avgStars} ★ <span className="ml-1 text-neutral-500 dark:text-neutral-400">{avgDestruction}%</span></span>
-                </div>
-              </article>;
-            })}
-          </div>
-        </section>
-      )}
+      {stats && <div className="mb-5 flex items-start justify-center gap-7 text-center sm:gap-10">
+        <div className="flex gap-3 sm:gap-4">{starCounts.map((count, index) => <div key={index}>
+          <div className="text-sm leading-none text-amber-400">{'★'.repeat(index + 1)}<span className="text-neutral-500">{'★'.repeat(2 - index)}</span></div>
+          <div className="mt-1 text-xs font-semibold text-neutral-900 dark:text-neutral-100">{count} <span className="font-normal text-neutral-500">({stats.total ? ((count / stats.total) * 100).toFixed(2) : '0.00'}%)</span></div>
+        </div>)}</div>
+        <div><div className="text-[11px] text-neutral-500 dark:text-neutral-400">Average stars</div><div className="mt-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100">{stats.avgStars}</div><div className="mt-3 text-[11px] text-neutral-500 dark:text-neutral-400">Average destruction</div><div className="mt-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100">{stats.avgDestruction}%</div></div>
+      </div>}
 
       {/* Battle Cards List */}
       <div className="space-y-2.5">
         {visibleBattles.map((battle, index) => {
           const stars = battle.stars ?? 0;
           const destruction = battle.destructionPercentage ?? 0;
-          const isThreeStar = stars === 3;
           const isCopied = copiedCode === battle.shareCode;
 
           return (
             <div
               key={`${battle.battleTime}-${index}`}
-              className="p-3.5 rounded-xl border border-neutral-200/60 dark:border-neutral-800/70 bg-neutral-50/30 dark:bg-neutral-900/30 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+              className="rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-4 dark:border-neutral-800/70 dark:bg-[#2b2e36]"
             >
-              {/* Top row: Mode badge, timestamp, duration */}
-              <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
-                    {battle.battleMode || 'Attack'}
-                  </span>
-                  {typeof battle.isAttack === 'boolean' && <span className={`text-[10px] font-semibold uppercase tracking-wider ${battle.isAttack ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>{battle.isAttack ? 'Attack' : 'Defense'}</span>}
-
-                  <span title={formatFullTime(battle.battleTime)} className="text-[11px]">
-                    {formatRelativeTime(battle.battleTime)}
-                  </span>
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    {battle.isAttack === false ? 'Defense' : 'Attack'}
+                    {typeof battle.trophyChange === 'number' && <span className={`ml-2 ${battle.trophyChange >= 0 ? 'text-green-500' : 'text-red-400'}`}>{battle.trophyChange > 0 ? '+' : ''}{battle.trophyChange}</span>}
+                  </div>
+                  <div className="truncate text-xs text-neutral-500 dark:text-neutral-400" title={battle.opponentTag || undefined}>{battle.opponentName || battle.battleMode || 'Battle'}{battle.opponentTag && <span className="ml-1 text-neutral-400">{battle.opponentTag}</span>}</div>
                 </div>
-
-                {battle.duration !== undefined && (
-                  <span className="font-sans text-[11px] text-neutral-400">
-                    {formatDuration(battle.duration)}
-                  </span>
-                )}
-              </div>
-
-              {/* Middle row: Stars, Destruction % */}
-              <div className="flex items-center justify-between gap-4 my-1.5">
-                {/* Visual Stars */}
-                <div className="flex items-center gap-1">
-                  {[0, 1, 2].map((starIdx) => {
-                    const earned = starIdx < stars;
-                    return (
-                      <svg
-                        key={starIdx}
-                        className={`w-5 h-5 ${
-                          earned
-                            ? 'text-amber-400 fill-amber-400'
-                            : 'text-neutral-200 dark:text-neutral-800 fill-neutral-200 dark:fill-neutral-800'
-                        }`}
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    );
-                  })}
-                  <span className="text-xs font-sans font-medium ml-1.5 text-neutral-500 dark:text-neutral-400">
-                    {stars}/3
-                  </span>
-                </div>
-
-                {/* Destruction % */}
-                <div className="text-base font-bold font-sans text-neutral-900 dark:text-neutral-100">
-                  {destruction}%
+                <div className="shrink-0 text-right">
+                  <div className="flex items-center justify-end gap-1 text-xs font-semibold text-neutral-900 dark:text-neutral-100">
+                    <span className="tracking-tight text-amber-400">{'★'.repeat(stars)}<span className="text-neutral-500">{'★'.repeat(Math.max(0, 3 - stars))}</span></span>
+                    <span>{destruction}%</span>
+                  </div>
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400" title={formatFullTime(battle.battleTime)}>{formatDuration(battle.duration) || formatRelativeTime(battle.battleTime)}</div>
                 </div>
               </div>
 
-              {/* Slender Destruction Progress Bar */}
-              <div className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-1 overflow-hidden my-2.5">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    isThreeStar
-                      ? 'bg-amber-400'
-                      : destruction >= 50
-                      ? 'bg-neutral-600 dark:bg-neutral-300'
-                      : 'bg-neutral-400 dark:bg-neutral-600'
-                  }`}
-                  style={{ width: `${Math.min(100, Math.max(0, destruction))}%` }}
-                />
+              <div className="mb-3">
+                {getArmyUnits(battle).length > 0
+                  ? <ArmyComposition units={getArmyUnits(battle)} />
+                  : <p className="text-xs text-neutral-500 dark:text-neutral-400">Army composition unavailable</p>}
               </div>
 
               {/* Bottom row: Looted Resources & Copy Army Button */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
                 {/* Loot */}
                 {battle.lootedResources ? (
                   <div className="flex items-center gap-3 font-sans text-[11px]">
