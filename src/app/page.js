@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory, getCurrentClanWar } from './actions';
+import { getPlayerData, getPlayerBattleHistory, getPlayerCwlHistory, getCurrentClanWar, getRankedPlayerLeaderboard } from './actions';
 import LeagueBadge from '@/components/LeagueBadge';
 import TownHallImage from '@/components/TownHallImage';
 import HeroIcon from '@/components/HeroIcon';
@@ -12,6 +12,7 @@ import EquipmentIcon from '@/components/EquipmentIcon';
 import TroopLevels from '@/components/TroopLevels';
 import BattleHistory from '@/components/BattleHistory';
 import CwlHistory from '@/components/CwlHistory';
+import PlayerLeaderboard from '@/components/PlayerLeaderboard';
 import SavedPlayers, { useSavedPlayers, normalizeTag, StarIcon } from '@/components/SavedPlayers';
 import Image from 'next/image';
 import TOWNHALL_MAX_LEVELS from './track/townhall-max-levels.json';
@@ -53,6 +54,10 @@ function HomeContent() {
   const [cwl, setCwl] = useState(null);
   const [cwlLoading, setCwlLoading] = useState(false);
   const [cwlError, setCwlError] = useState(null);
+  const [leaderboard, setLeaderboard] = useState(null);
+  const [leaderboardGroup, setLeaderboardGroup] = useState(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState(null);
   const [war, setWar] = useState(null);
   const [warLoading, setWarLoading] = useState(false);
   const [warError, setWarError] = useState(null);
@@ -85,6 +90,10 @@ function HomeContent() {
     setBattleLoading(true);
     setCwlError(null);
     setCwlLoading(true);
+    setLeaderboard(null);
+    setLeaderboardGroup(null);
+    setLeaderboardLoading(false);
+    setLeaderboardError(null);
     if (!refresh) {
       setBattles(null);
       setCwl(null);
@@ -182,11 +191,36 @@ function HomeContent() {
     setCwl(null);
     setCwlError(null);
     setCwlLoading(false);
+    setLeaderboard(null);
+    setLeaderboardGroup(null);
+    setLeaderboardError(null);
+    setLeaderboardLoading(false);
     warRequestId.current += 1;
     setWar(null);
     setWarError(null);
     setWarLoading(false);
     setShowSavedPlayers(true);
+  };
+
+  const loadLeaderboard = useCallback(async () => {
+    const groupTag = player?.currentLeagueGroupTag;
+    const seasonId = player?.currentLeagueSeasonId;
+    if (!player?.tag || !groupTag || !seasonId) {
+      setLeaderboard([]);
+      setLeaderboardError('This player has no current Ranked tournament group.');
+      return;
+    }
+    setLeaderboardLoading(true);
+    const result = await getRankedPlayerLeaderboard(groupTag, seasonId, player.tag);
+    setLeaderboard(result.data || []);
+    setLeaderboardGroup(result.group || null);
+    setLeaderboardError(result.error || null);
+    setLeaderboardLoading(false);
+  }, [player?.currentLeagueGroupTag, player?.currentLeagueSeasonId, player?.tag]);
+
+  const handleHistoryTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'leaderboard' && leaderboard === null && !leaderboardLoading) loadLeaderboard();
   };
 
   const handleCopyTag = (playerTag) => {
@@ -533,7 +567,7 @@ function HomeContent() {
           <div className="flex p-1 bg-neutral-100 dark:bg-neutral-800/60 rounded-xl mb-4 w-fit">
             <button
               type="button"
-              onClick={() => setActiveTab('battles')}
+              onClick={() => handleHistoryTabChange('battles')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'battles'
                   ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-xs'
@@ -550,7 +584,24 @@ function HomeContent() {
 
             <button
               type="button"
-              onClick={() => setActiveTab('cwl')}
+              onClick={() => handleHistoryTabChange('leaderboard')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'leaderboard'
+                  ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-xs'
+                  : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+              }`}
+            >
+              <span>Leaderboard</span>
+              {leaderboard && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500">
+                  {leaderboard.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleHistoryTabChange('cwl')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'cwl'
                   ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-xs'
@@ -573,6 +624,15 @@ function HomeContent() {
               battles={battles}
               loading={battleLoading}
               error={battleError}
+            />
+          ) : activeTab === 'leaderboard' ? (
+            <PlayerLeaderboard
+              players={leaderboard || []}
+              group={leaderboardGroup}
+              leagueTier={player.leagueTier || player.league}
+              loading={leaderboardLoading}
+              error={leaderboardError}
+              currentPlayerTag={player.tag}
             />
           ) : (
             <CwlHistory

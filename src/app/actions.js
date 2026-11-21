@@ -256,7 +256,7 @@ export async function getClanData(clanTag) {
   }
 }
 
-export async function getClanMembers(clanTag) {
+export async function getClanMembers(clanTag, fresh = false) {
   const token = getApiToken();
 
   if (!token) {
@@ -278,8 +278,7 @@ export async function getClanMembers(clanTag) {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
-        // Revalidate clan members every 2 minutes (120s)
-        next: { revalidate: 120 },
+        ...(fresh ? { cache: 'no-store' } : { next: { revalidate: 120 } }),
       }
     );
 
@@ -298,6 +297,37 @@ export async function getClanMembers(clanTag) {
       error: err.message || 'Failed to fetch clan members',
       data: [],
     };
+  }
+}
+
+export async function getRankedPlayerLeaderboard(groupTag, seasonId, playerTag, fresh = false) {
+  const normalizedGroupTag = String(groupTag || '').trim().toUpperCase();
+  if (!normalizedGroupTag || normalizedGroupTag === '#0' || normalizedGroupTag === '0' || !seasonId || !playerTag) {
+    return { data: [], error: 'This player has no current Ranked tournament group.' };
+  }
+  const token = getApiToken();
+  if (!token) return { data: [], error: 'API token missing in environment variables' };
+
+  try {
+    const normalizedTag = decodeURIComponent(playerTag).trim().toUpperCase().replace(/^#/, '');
+    const decodedGroupTag = decodeURIComponent(groupTag).trim().toUpperCase();
+    const encodedGroupTag = encodeURIComponent(decodedGroupTag.startsWith('#') ? decodedGroupTag : `#${decodedGroupTag}`);
+    const query = new URLSearchParams({ playerTag: `#${normalizedTag}` });
+    const response = await fetch(`https://cocproxy.royaleapi.dev/v1/leaguegroup/${encodedGroupTag}/${encodeURIComponent(seasonId)}?${query}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      ...fetchCacheOptions(fresh, 120),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { data: [], error: payload.message || `Error ${response.status}: Failed to fetch Ranked leaderboard` };
+    }
+    return {
+      data: Array.isArray(payload.members) ? payload.members : Array.isArray(payload.items) ? payload.items : [],
+      group: payload,
+      season: seasonId,
+    };
+  } catch (err) {
+    return { data: [], error: err.message || 'Failed to fetch Ranked leaderboard' };
   }
 }
 
