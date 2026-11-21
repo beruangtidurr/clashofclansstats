@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { getTroopImageUrl } from './TroopIcon';
 import HeroIcon from './HeroIcon';
 import EquipmentIcon from './EquipmentIcon';
+import TownHallImage from './TownHallImage';
 import itemNames from '../app/track/item-names.json';
 
 const superTroopNames = {
@@ -37,7 +38,32 @@ const armyHeroSlots = {
   7: 'Dragon Duke',
 };
 
+// Army-link equipment IDs track the current in-game ordering, which can
+// differ from the static IDs in the bundled item-name catalog.
+const armyEquipmentNames = {
+  59: 'Electro Fangs',
+  62: 'Monolith Arrow',
+};
+
 const siegeMachineIds = new Set([4000051, 4000052, 4000062, 4000075, 4000087, 4000091, 4000092, 4000135, 4000188]);
+
+// Ranked Battles allocate 40 trophies per attack/defense. The battle log API
+// omits this delta, so derive the attack reward from the published scoring bands.
+function getRankedTrophyChange(battle) {
+  const stars = Number(battle.stars) || 0;
+  const destruction = Math.max(0, Math.min(100, Number(battle.destructionPercentage) || 0));
+  if (stars >= 3) return 40;
+  if (stars === 2) return 16 + Math.floor(Math.max(0, destruction - 50) / 3);
+  if (stars === 1) return 5 + Math.floor(Math.max(0, destruction - 1) / 9);
+  return Math.min(4, Math.floor(destruction / 25));
+}
+
+function getBattleTrophyChange(battle) {
+  if (typeof battle.trophyChange === 'number') return battle.trophyChange;
+  if (!String(battle.battleMode || '').toLowerCase().includes('rank')) return null;
+  const earned = getRankedTrophyChange(battle);
+  return battle.isAttack === false ? 40 - earned : earned;
+}
 
 function decodeArmyShareCode(shareCode) {
   if (typeof shareCode !== 'string') return { units: [], heroes: [], heroEquipment: [] };
@@ -68,7 +94,7 @@ function decodeArmyShareCode(shareCode) {
         heroes.push(hero);
         const loadoutEquipment = [];
         for (const equipmentId of (equipmentIds || '').split('_').filter(Boolean)) {
-          const gearName = itemNames[`home:${90000000 + Number(equipmentId)}`];
+          const gearName = armyEquipmentNames[Number(equipmentId)] || itemNames[`home:${90000000 + Number(equipmentId)}`];
           if (gearName) {
             const gear = { name: gearName, level: 1 };
             heroEquipment.push(gear);
@@ -125,7 +151,7 @@ function ArmyComposition({ units, heroes = [], heroEquipment = [], heroLoadouts 
         <HeroIcon name={hero.name} level={hero.level || 1} showLevel={false} plain size="large" />
         {companions.length > 0 && <div className="grid h-10 w-10 grid-cols-2 grid-rows-2 place-items-center gap-0">
           {companions.map((companion, companionIndex) => companion.type === 'pet'
-            ? <div key={`${companion.name}-${companionIndex}`} className="group relative h-5 w-5" title={companion.name}><Image src={getTroopImageUrl(companion.name, 'pet')} alt={companion.name} fill sizes="20px" className="object-contain transition-transform duration-200 group-hover:scale-105" unoptimized /><span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-white px-2.5 py-1 text-xs text-neutral-800 shadow-md group-hover:block dark:bg-neutral-100">{companion.name}</span></div>
+            ? <div key={`${companion.name}-${companionIndex}`} className="group relative col-span-2 row-span-1 h-5 w-10" title={companion.name}><Image src={getTroopImageUrl(companion.name, 'pet')} alt={companion.name} fill sizes="40px" className="object-cover transition-transform duration-200 group-hover:scale-105" unoptimized /><span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-white px-2.5 py-1 text-xs text-neutral-800 shadow-md group-hover:block dark:bg-neutral-100">{companion.name}</span></div>
             : <EquipmentIcon key={`${companion.name}-${companionIndex}`} name={companion.name} level={companion.level || 1} plain showLevel={false} compact compactSize="block" />)}
         </div>}
       </div>;
@@ -336,11 +362,6 @@ export default function BattleHistory({ battles, loading, error }) {
     <div className="mx-auto w-full max-w-xl">
       <div className="mb-5 flex flex-col items-center gap-4">
         <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Battle</h3>
-        <div className="flex items-center gap-8 border-b border-neutral-200 dark:border-neutral-800" role="tablist" aria-label="Battle history">
-          <button type="button" role="tab" aria-selected="true" className="border-b-2 border-amber-300 px-1 pb-2 text-sm font-medium text-neutral-900 dark:text-neutral-100">Log</button>
-          <button type="button" role="tab" aria-selected="false" disabled className="border-b-2 border-transparent px-1 pb-2 text-sm text-neutral-400">Ranking</button>
-          <button type="button" role="tab" aria-selected="false" disabled className="border-b-2 border-transparent px-1 pb-2 text-sm text-neutral-400">History</button>
-        </div>
         <div className="flex w-full justify-center gap-8">
           <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
             <span className="sr-only">Battle direction</span>
@@ -370,6 +391,7 @@ export default function BattleHistory({ battles, loading, error }) {
         {visibleBattles.map((battle, index) => {
           const stars = battle.stars ?? 0;
           const destruction = battle.destructionPercentage ?? 0;
+          const trophyChange = getBattleTrophyChange(battle);
           const isCopied = copiedCode === battle.shareCode;
           const army = getArmyUnits(battle);
 
@@ -382,9 +404,9 @@ export default function BattleHistory({ battles, loading, error }) {
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                     {battle.isAttack === false ? 'Defense' : 'Attack'}
-                    {typeof battle.trophyChange === 'number' && <span className={`ml-2 ${battle.trophyChange >= 0 ? 'text-green-500' : 'text-red-400'}`}>{battle.trophyChange > 0 ? '+' : ''}{battle.trophyChange}</span>}
+                    {typeof trophyChange === 'number' && <span className={`ml-2 inline-flex items-center gap-0.5 ${trophyChange >= 0 ? 'text-green-500' : 'text-red-400'}`} title={`${trophyChange > 0 ? '+' : ''}${trophyChange} trophies`}><Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" alt="Trophies" width={14} height={14} className="h-3.5 w-3.5 object-contain" unoptimized />{trophyChange > 0 ? '+' : ''}{trophyChange}</span>}
                   </div>
-                  <div className="truncate text-xs text-neutral-500 dark:text-neutral-400" title={battle.opponentTag || undefined}>{battle.opponentName || battle.battleMode || 'Battle'}{battle.opponentTag && <span className="ml-1 text-neutral-400">{battle.opponentTag}</span>}</div>
+                  <div className="flex min-w-0 items-center gap-1 truncate text-xs text-neutral-500 dark:text-neutral-400" title={battle.opponentTag || undefined}><TownHallImage level={battle.opponentTownHallLevel} size="xs" />{battle.opponentName || battle.battleMode || 'Battle'}{battle.opponentTag && <span className="ml-1 truncate text-neutral-400">{battle.opponentTag}</span>}</div>
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="flex items-center justify-end gap-1 text-xs font-semibold text-neutral-900 dark:text-neutral-100">

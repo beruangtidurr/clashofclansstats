@@ -78,9 +78,42 @@ async function getOfficialPlayerBattleLog(encodedTag, playerTag, fresh = false) 
     }
     const payload = await response.json();
     const entries = Array.isArray(payload.items) ? payload.items : [];
-    // Clash API battlelog items are returned newest first. Keep that ordering
-    // instead of trying to sort on a timestamp (the API doesn't expose one).
-    return { data: entries.map((entry) => normalizeOfficialBattle(entry, playerTag)).filter(Boolean) };
+    // Clash API battlelog items are returned newest first. Keep that ordering.
+    const data = entries.map((entry) => normalizeOfficialBattle(entry, playerTag)).filter(Boolean);
+
+    // Some Ranked battlelog entries omit the opponent TH level. Fill it from
+    // the opponent profile for the first page of results.
+    const missingProfileTags = [...new Set(data
+      .filter((battle) => !battle.opponentTownHallLevel && battle.opponentTag)
+      .map((battle) => String(battle.opponentTag).toUpperCase().replace(/^#/, '')))].slice(0, 10);
+    for (let index = 0; index < missingProfileTags.length; index += 3) {
+      const batch = await Promise.all(missingProfileTags.slice(index, index + 3).map(async (tag) => {
+        try {
+          const profileResponse = await fetch(`https://cocproxy.royaleapi.dev/v1/players/%23${tag}`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+            next: { revalidate: 300 },
+          });
+          if (!profileResponse.ok) return null;
+          const profile = await profileResponse.json();
+          return [tag, profile.townHallLevel || profile.townhallLevel || null];
+        } catch {
+          return null;
+        }
+      }));
+      for (const result of batch) {
+        if (!result) continue;
+        const [tag, level] = result;
+        if (level) {
+          for (const battle of data) {
+            if (String(battle.opponentTag || '').toUpperCase().replace(/^#/, '') === tag) {
+              battle.opponentTownHallLevel = level;
+            }
+          }
+        }
+      }
+    }
+
+    return { data };
   } catch (err) {
     return { error: err.message || 'Failed to fetch battle history', data: [] };
   }
@@ -106,8 +139,10 @@ function normalizeOfficialBattle(entry, playerTag) {
   const battle = entry.battle || entry;
   const normalizeTag = (tag) => String(tag || '').toUpperCase().replace(/^%23|^#/, '');
   const player = normalizeTag(playerTag);
-  const attacker = battle.attacker || entry.attacker || entry.player || battle.player || null;
-  const defender = battle.defender || entry.defender || null;
+  // The outer battlelog entry contains participant profiles (including TH);
+  // its nested battle object contains per-side attack results.
+  const attacker = entry.attacker || entry.player || battle.attacker || battle.player || null;
+  const defender = entry.defender || battle.defender || null;
   const isAttack = getBattleDirection(entry, playerTag);
   const opponent = isAttack === true
     ? defender
@@ -128,10 +163,13 @@ function normalizeOfficialBattle(entry, playerTag) {
     isAttack,
     opponentName: opponent?.name || entry.opponentName || battle.opponentName || '',
     opponentTag: opponent?.tag || entry.opponentTag || battle.opponentTag || '',
-    trophyChange: entry.trophyChange ?? battle.trophyChange ?? null,
+    opponentTownHallLevel: opponent?.townHallLevel || opponent?.townhallLevel || opponent?.townHall || entry.opponentTownHallLevel || battle.opponentTownHallLevel || null,
+    trophyChange: [entry.trophyChange, battle.trophyChange, entry.trophiesChange, battle.trophiesChange]
+      .map((value) => value == null || value === '' ? null : Number(value))
+      .find((value) => value != null && Number.isFinite(value)) ?? null,
     battleTime: entry.battleTime || entry.battleTimestamp || entry.timestamp || (typeof battle.battleTime === 'string' ? battle.battleTime : '') || battle.battleTimestamp || '',
-    stars: entry.stars ?? (isAttack === false ? defender?.stars : attacker?.stars) ?? battle.stars ?? 0,
-    destructionPercentage: entry.destructionPercentage ?? (isAttack === false ? defender?.destructionPercentage : attacker?.destructionPercentage) ?? battle.destructionPercentage ?? 0,
+    stars: entry.stars ?? (isAttack === false ? battle.defender?.stars : battle.attacker?.stars) ?? battle.stars ?? 0,
+    destructionPercentage: entry.destructionPercentage ?? (isAttack === false ? battle.defender?.destructionPercentage : battle.attacker?.destructionPercentage) ?? battle.destructionPercentage ?? 0,
     duration: entry.duration ?? battle.duration ?? (typeof battle.battleTime === 'number' ? battle.battleTime : typeof entry.battleTime === 'number' ? entry.battleTime : 0),
     lootedResources,
     heroes: battle.heroes || entry.heroes || [],
