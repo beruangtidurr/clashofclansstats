@@ -56,6 +56,7 @@ function HomeContent() {
   const [war, setWar] = useState(null);
   const [warLoading, setWarLoading] = useState(false);
   const [warError, setWarError] = useState(null);
+  const [playerView, setPlayerView] = useState('profile');
   const [activeTab, setActiveTab] = useState('battles');
   const [copiedTag, setCopiedTag] = useState(false);
   const searchRequestId = useRef(0);
@@ -288,9 +289,40 @@ function HomeContent() {
         </div>
       )}
 
+
       {/* Player Profile Details */}
       {player && (
         <>
+          <div className="flex p-1 bg-neutral-100 dark:bg-neutral-800/60 rounded-xl mb-4 w-fit" role="tablist" aria-label="Player pages">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={playerView === 'profile'}
+              onClick={() => setPlayerView('profile')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                playerView === 'profile'
+                  ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-xs'
+                  : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+              }`}
+            >
+              Profile
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={playerView === 'battles'}
+              onClick={() => setPlayerView('battles')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                playerView === 'battles'
+                  ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-xs'
+                  : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+              }`}
+            >
+              Player’s Battle Log
+            </button>
+          </div>
+
+          {playerView === 'profile' ? (
           <div className="rounded-2xl border border-neutral-200/80 dark:border-neutral-800/80 bg-white dark:bg-neutral-900/40 p-5 sm:p-6 mb-6">
             {/* Top row: TH image, Player info, League badge & Trophies */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -495,7 +527,8 @@ function HomeContent() {
               townHallLevel={player.townHallLevel}
             />
           </div>
-
+          ) : (
+          <>
           {/* History Navigation Tabs */}
           <div className="flex p-1 bg-neutral-100 dark:bg-neutral-800/60 rounded-xl mb-4 w-fit">
             <button
@@ -547,6 +580,8 @@ function HomeContent() {
               loading={cwlLoading}
               error={cwlError}
             />
+          )}
+          </>
           )}
         </>
       )}

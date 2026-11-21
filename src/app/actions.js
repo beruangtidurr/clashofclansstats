@@ -78,6 +78,8 @@ async function getOfficialPlayerBattleLog(encodedTag, playerTag, fresh = false) 
     }
     const payload = await response.json();
     const entries = Array.isArray(payload.items) ? payload.items : [];
+    // Clash API battlelog items are returned newest first. Keep that ordering
+    // instead of trying to sort on a timestamp (the API doesn't expose one).
     return { data: entries.map((entry) => normalizeOfficialBattle(entry, playerTag)).filter(Boolean) };
   } catch (err) {
     return { error: err.message || 'Failed to fetch battle history', data: [] };
@@ -102,6 +104,16 @@ function getBattleDirection(entry, playerTag) {
 function normalizeOfficialBattle(entry, playerTag) {
   if (!entry || typeof entry !== 'object') return null;
   const battle = entry.battle || entry;
+  const normalizeTag = (tag) => String(tag || '').toUpperCase().replace(/^%23|^#/, '');
+  const player = normalizeTag(playerTag);
+  const attacker = battle.attacker || entry.attacker || entry.player || battle.player || null;
+  const defender = battle.defender || entry.defender || null;
+  const isAttack = getBattleDirection(entry, playerTag);
+  const opponent = isAttack === true
+    ? defender
+    : isAttack === false
+      ? attacker
+      : entry.opponent || battle.opponent || [attacker, defender].find((side) => side?.tag && normalizeTag(side.tag) !== player) || null;
   const loot = battle.lootedResources || battle.loot || entry.lootedResources;
   const lootedResources = Array.isArray(loot)
     ? Object.fromEntries(loot.map((resource) => {
@@ -112,16 +124,18 @@ function normalizeOfficialBattle(entry, playerTag) {
     : loot;
 
   return {
-    battleMode: entry.battleMode || entry.battleType || battle.type || battle.mode || 'Attack',
-    isAttack: getBattleDirection(entry, playerTag),
-    opponentName: entry.opponent?.name || battle.opponent?.name || '',
-    opponentTag: entry.opponent?.tag || battle.opponent?.tag || '',
+    battleMode: entry.battleType || entry.battleMode || battle.type || battle.mode || 'Attack',
+    isAttack,
+    opponentName: opponent?.name || entry.opponentName || battle.opponentName || '',
+    opponentTag: opponent?.tag || entry.opponentTag || battle.opponentTag || '',
     trophyChange: entry.trophyChange ?? battle.trophyChange ?? null,
-    battleTime: entry.battleTimestamp || entry.timestamp || (typeof entry.battleTime === 'string' ? entry.battleTime : '') || battle.battleTimestamp || (typeof battle.battleTime === 'string' ? battle.battleTime : ''),
-    stars: entry.stars ?? battle.stars ?? battle.attacker?.stars ?? 0,
-    destructionPercentage: entry.destructionPercentage ?? battle.destructionPercentage ?? battle.attacker?.destructionPercentage ?? 0,
+    battleTime: entry.battleTime || entry.battleTimestamp || entry.timestamp || (typeof battle.battleTime === 'string' ? battle.battleTime : '') || battle.battleTimestamp || '',
+    stars: entry.stars ?? (isAttack === false ? defender?.stars : attacker?.stars) ?? battle.stars ?? 0,
+    destructionPercentage: entry.destructionPercentage ?? (isAttack === false ? defender?.destructionPercentage : attacker?.destructionPercentage) ?? battle.destructionPercentage ?? 0,
     duration: entry.duration ?? battle.duration ?? (typeof battle.battleTime === 'number' ? battle.battleTime : typeof entry.battleTime === 'number' ? entry.battleTime : 0),
     lootedResources,
+    heroes: battle.heroes || entry.heroes || [],
+    heroEquipment: battle.heroEquipment || battle.equipment || entry.heroEquipment || entry.equipment || [],
     shareCode: entry.shareCode || entry.armyShareCode || '',
     familyId: entry.familyId || '',
   };

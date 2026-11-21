@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-export default function EquipmentIcon({ name, level = 1, maxLevel }) {
+export default function EquipmentIcon({ name, level = 1, maxLevel, plain = false, showLevel = true, compact = false, compactSize = 'small' }) {
   const [imageError, setImageError] = useState(false);
   const [prevName, setPrevName] = useState(name);
 
@@ -29,21 +29,21 @@ export default function EquipmentIcon({ name, level = 1, maxLevel }) {
       title={`${name} (Lv. ${level}${maxLevel ? ` / ${maxLevel}` : ''})`}
     >
       <div
-        className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg overflow-hidden border transition-all select-none shadow-xs flex items-center justify-center ${
+        className={`relative ${compact ? (compactSize === 'medium' ? 'h-5 w-5' : compactSize === 'block' ? 'h-5 w-5' : 'h-3 w-3') : 'w-8 h-8 sm:w-9 sm:h-9'} rounded-lg overflow-hidden ${plain ? '' : 'border transition-all shadow-xs'} flex items-center justify-center ${plain ? '' : `${
           isEpic ? 'bg-[#8f409e]' : 'bg-[#3c8bcc]'
         } ${
           isMax
             ? 'border-2 border-amber-400 dark:border-amber-500 hover:border-amber-400 dark:hover:border-amber-500'
             : 'border-2 border-neutral-400 dark:border-neutral-500 hover:border-neutral-500 dark:hover:border-neutral-400'
-        }`}
+        }`}`}
       >
         {!imageError && imageUrl ? (
-          <div className="relative h-6 w-6 sm:h-7 sm:w-7 transition-transform duration-200 group-hover:scale-105">
+          <div className={`relative ${compact ? (compactSize === 'medium' || compactSize === 'block' ? 'h-5 w-5' : 'h-3 w-3') : 'h-6 w-6 sm:h-7 sm:w-7'} transition-transform duration-200 group-hover:scale-105`}>
             <Image
               src={imageUrl}
               alt={name}
               fill
-              sizes="28px"
+              sizes={compact ? (compactSize === 'medium' || compactSize === 'block' ? '20px' : '12px') : '28px'}
               className="object-contain"
               onError={() => setImageError(true)}
             />
@@ -55,7 +55,7 @@ export default function EquipmentIcon({ name, level = 1, maxLevel }) {
         )}
 
         {/* Level badge inside image left corner */}
-        <div className="absolute bottom-0.5 left-0.5 px-0.5 py-px rounded bg-black/75 dark:bg-black/85 backdrop-blur-xs text-white text-[7px] sm:text-[8px] font-sans font-bold leading-none shadow-sm flex items-center gap-0.5 pointer-events-none transition-all z-10">
+        {showLevel && <div className="absolute bottom-0.5 left-0.5 px-0.5 py-px rounded bg-black/75 dark:bg-black/85 backdrop-blur-xs text-white text-[7px] sm:text-[8px] font-sans font-bold leading-none shadow-sm flex items-center gap-0.5 pointer-events-none transition-all z-10">
           <span>{level}</span>
           {maxLevel && (
             <span className="hidden group-hover:inline text-neutral-300 dark:text-neutral-400 font-normal">
@@ -67,7 +67,7 @@ export default function EquipmentIcon({ name, level = 1, maxLevel }) {
               MAX
             </span>
           )}
-        </div>
+        </div>}
       </div>
 
       {/* Hover Tooltip */}
@@ -80,9 +80,9 @@ export default function EquipmentIcon({ name, level = 1, maxLevel }) {
             }`}
           />
         </div>
-        <span className="font-sans">
+        {showLevel && <span className="font-sans">
           {isEpic ? 'Epic' : 'Common'} · Lv. {level}{maxLevel ? ` (Max ${maxLevel})` : ''}{isMax ? ' · MAX' : ''}
-        </span>
+        </span>}
       </div>
     </div>
   );
