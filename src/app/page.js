@@ -181,9 +181,11 @@ function HomeContent() {
 
   const handleClearSearch = () => {
     searchRequestId.current += 1;
-    router.replace('/', { scroll: false });
+    router.replace('/', { scroll: true });
     setTag('');
     setPlayer(null);
+    setPlayerView('profile');
+    setActiveTab('battles');
     setError(null);
     setBattles(null);
     setBattleError(null);
@@ -310,7 +312,6 @@ function HomeContent() {
         <SavedPlayers
           savedPlayers={savedPlayers}
           currentTag={player ? player.tag : tag}
-          onSelectPlayer={(selectedTag) => searchPlayer(selectedTag)}
           onRemovePlayer={(tagToRemove) => handleRemoveSavedPlayer(tagToRemove)}
           onClearAll={handleClearAllSaved}
         />

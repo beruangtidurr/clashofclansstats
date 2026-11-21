@@ -2,6 +2,7 @@
 'use client';
 
 import { useSyncExternalStore, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import TownHallImage from '@/components/TownHallImage';
 
 const STORAGE_KEY = 'coc_saved_players';
@@ -210,7 +211,6 @@ export function StarIcon({ filled = false, className = 'w-4 h-4' }) {
 export default function SavedPlayers({
   savedPlayers = [],
   currentTag = '',
-  onSelectPlayer,
   onRemovePlayer,
   onClearAll,
 }) {
@@ -249,9 +249,8 @@ export default function SavedPlayers({
               key={item.tag}
               className={`group flex min-h-[72px] items-center gap-3 py-3 transition-colors ${isSelected ? 'bg-neutral-100/80 dark:bg-neutral-800/50' : 'hover:bg-neutral-100/60 dark:hover:bg-neutral-800/30'}`}
             >
-              <button
-                type="button"
-                onClick={() => onSelectPlayer && onSelectPlayer(item.tag)}
+              <Link
+                href={`/?tag=${encodeURIComponent(itemTag)}`}
                 className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left cursor-pointer"
                 title={`View stats for ${item.name || item.tag}`}
               >
@@ -262,7 +261,7 @@ export default function SavedPlayers({
                   <span className="block truncate text-sm font-semibold text-neutral-800 dark:text-neutral-100">{item.name || item.tag}</span>
                   {item.clanName ? <span className="mt-0.5 block truncate text-xs text-neutral-500 dark:text-neutral-400">⚔️ {item.clanName}{role ? <><span className="px-1">|</span>{role}</> : null}</span> : <span className="mt-0.5 block truncate font-sans text-[10px] text-neutral-400">{item.tag}</span>}
                 </span>
-              </button>
+              </Link>
 
               <span className="flex min-w-[70px] shrink-0 items-center justify-between gap-2 rounded-md bg-neutral-200/70 px-2.5 py-2 text-xs font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200" title="Trophies">
                 <svg className="h-4 w-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 3h3v3a5 5 0 0 1-4.3 4.95A6 6 0 0 1 13 14.9V18h4v3H7v-3h4v-3.1a6 6 0 0 1-3.7-3.95A5 5 0 0 1 3 6V3h3V1h12v2ZM6 5H5v1a3 3 0 0 0 2.1 2.86A8 8 0 0 1 6 5Zm13 0a8 8 0 0 1-1.1 3.86A3 3 0 0 0 20 6V5h-1Z" /></svg>

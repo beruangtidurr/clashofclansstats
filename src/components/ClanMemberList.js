@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import TownHallImage from '@/components/TownHallImage';
 import LeagueBadge from '@/components/LeagueBadge';
+import CustomDropdown from '@/components/CustomDropdown';
 
 export function formatRole(role) {
   switch (role) {
@@ -40,6 +41,7 @@ export default function ClanMemberList({ members = [] }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [sortBy, setSortBy] = useState('rank');
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 
   // Counts for role filter pills
   const roleCounts = useMemo(() => {
@@ -173,21 +175,24 @@ export default function ClanMemberList({ members = [] }) {
         </div>
 
         {/* Sort Select */}
-        <div className="sm:w-44 shrink-0">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-full py-2 px-3 text-xs sm:text-sm rounded-xl bg-neutral-100/80 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 cursor-pointer"
-          >
-            <option value="rank">Sort: Clan Rank</option>
-            <option value="trophies">Sort: Trophies</option>
-            <option value="builderTrophies">Sort: Builder Trophies</option>
-            <option value="th">Sort: Town Hall</option>
-            <option value="donations">Sort: Donations</option>
-            <option value="exp">Sort: Exp Level</option>
-            <option value="name">Sort: Name (A-Z)</option>
-          </select>
-        </div>
+        <CustomDropdown
+          label="Sort clan members"
+          value={sortBy}
+          options={[
+            { value: 'rank', label: 'Sort: Clan Rank' },
+            { value: 'trophies', label: 'Sort: Trophies' },
+            { value: 'builderTrophies', label: 'Sort: Builder Trophies' },
+            { value: 'th', label: 'Sort: Town Hall' },
+            { value: 'donations', label: 'Sort: Donations' },
+            { value: 'exp', label: 'Sort: Exp Level' },
+            { value: 'name', label: 'Sort: Name (A-Z)' },
+          ]}
+          isOpen={sortDropdownOpen}
+          onToggle={setSortDropdownOpen}
+          onChange={setSortBy}
+          className="w-full shrink-0 sm:w-44"
+          buttonClassName="w-full text-xs sm:text-sm"
+        />
       </div>
 
       {/* Role Filter Tabs */}

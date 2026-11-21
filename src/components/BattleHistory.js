@@ -8,6 +8,7 @@ import HeroIcon from './HeroIcon';
 import EquipmentIcon from './EquipmentIcon';
 import TownHallImage from './TownHallImage';
 import itemNames from '../app/track/item-names.json';
+import CustomDropdown from './CustomDropdown';
 
 const superTroopNames = {
   4000026: 'Super Barbarian',
@@ -256,6 +257,7 @@ function DarkElixirIcon() {
 export default function BattleHistory({ battles, loading, error }) {
   const [selectedDirection, setSelectedDirection] = useState('attack');
   const [selectedMode, setSelectedMode] = useState('all');
+  const [openDropdown, setOpenDropdown] = useState(null);
   const [visibleCount, setVisibleCount] = useState(10);
   const [copiedCode, setCopiedCode] = useState(null);
   const hasDirectionData = Array.isArray(battles) && battles.length > 0 && battles.every((battle) => typeof battle.isAttack === 'boolean');
@@ -363,18 +365,22 @@ export default function BattleHistory({ battles, loading, error }) {
       <div className="mb-5 flex flex-col items-center gap-4">
         <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Battle</h3>
         <div className="flex w-full justify-center gap-8">
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
-            <span className="sr-only">Battle direction</span>
-            <select value={selectedDirection} onChange={(event) => { setSelectedDirection(event.target.value); setVisibleCount(10); }} className="cursor-pointer appearance-none bg-transparent py-1 pr-5 font-medium focus:outline-none">
-              <option value="attack">Attacks</option><option value="defense">Defenses</option><option value="all">All battles</option>
-            </select><span aria-hidden="true" className="pointer-events-none -ml-5 text-xs">▼</span>
-          </label>
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
-            <span className="sr-only">Battle mode</span>
-            <select value={selectedMode} onChange={(event) => { setSelectedMode(event.target.value); setVisibleCount(10); }} className="cursor-pointer appearance-none bg-transparent py-1 pr-5 font-medium capitalize focus:outline-none">
-              <option value="all">All modes</option>{modes.map((mode) => <option key={mode} value={mode} className="capitalize">{mode}</option>)}
-            </select><span aria-hidden="true" className="pointer-events-none -ml-5 text-xs">▼</span>
-          </label>
+          <CustomDropdown
+            label="Battle direction"
+            value={selectedDirection}
+            options={[{ value: 'attack', label: 'Attacks' }, { value: 'defense', label: 'Defenses' }, { value: 'all', label: 'All battles' }]}
+            isOpen={openDropdown === 'direction'}
+            onToggle={(isOpen) => setOpenDropdown(isOpen ? 'direction' : null)}
+            onChange={(value) => { setSelectedDirection(value); setVisibleCount(10); }}
+          />
+          <CustomDropdown
+            label="Battle mode"
+            value={selectedMode}
+            options={[{ value: 'all', label: 'All modes' }, ...modes.map((mode) => ({ value: mode, label: mode }))]}
+            isOpen={openDropdown === 'mode'}
+            onToggle={(isOpen) => setOpenDropdown(isOpen ? 'mode' : null)}
+            onChange={(value) => { setSelectedMode(value); setVisibleCount(10); }}
+          />
         </div>
       </div>
 
@@ -402,11 +408,15 @@ export default function BattleHistory({ battles, loading, error }) {
             >
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                  <div className="text-md font-medium text-neutral-900 dark:text-neutral-100">
                     {battle.isAttack === false ? 'Defense' : 'Attack'}
-                    {typeof trophyChange === 'number' && <span className={`ml-2 inline-flex items-center gap-0.5 ${trophyChange >= 0 ? 'text-green-500' : 'text-red-400'}`} title={`${trophyChange > 0 ? '+' : ''}${trophyChange} trophies`}><Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" alt="Trophies" width={14} height={14} className="h-3.5 w-3.5 object-contain" unoptimized />{trophyChange > 0 ? '+' : ''}{trophyChange}</span>}
+                    {typeof trophyChange === 'number' && <span className={`ml-2 inline-flex items-center text-sm gap-0.5 ${trophyChange >= 0 ? 'text-green-600' : 'text-red-400'}`} title={`${trophyChange > 0 ? '+' : ''}${trophyChange} trophies`}><Image src="https://assets.clashk.ing/icons/Icon_HV_Trophy.png" alt="Trophies" width={14} height={14} className="h-3.5 w-3.5 object-contain" unoptimized />{trophyChange > 0 ? '+' : ''}{trophyChange}</span>}
                   </div>
-                  <div className="flex min-w-0 items-center gap-1 truncate text-xs text-neutral-500 dark:text-neutral-400" title={battle.opponentTag || undefined}><TownHallImage level={battle.opponentTownHallLevel} size="xs" />{battle.opponentName || battle.battleMode || 'Battle'}{battle.opponentTag && <span className="ml-1 truncate text-neutral-400">{battle.opponentTag}</span>}</div>
+                  <div className="flex min-w-0 items-center gap-1.5 truncate" title={battle.opponentTag || undefined}>
+                    <TownHallImage level={battle.opponentTownHallLevel} size="opponent" />
+                    <span className="truncate text-sm font-medium text-neutral-700 dark:text-neutral-300">{battle.opponentName || battle.battleMode || 'Battle'}</span>
+                    {battle.opponentTag && <span className="truncate text-xs text-neutral-400">{battle.opponentTag}</span>}
+                  </div>
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="flex items-center justify-end gap-1 text-xs font-semibold text-neutral-900 dark:text-neutral-100">
@@ -476,6 +486,7 @@ export default function BattleHistory({ battles, loading, error }) {
                         <svg className="w-3 h-3 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
+                        Copy Army Link
                         {/* <span>Copy Army</span> */}
                       </>
                     )}
